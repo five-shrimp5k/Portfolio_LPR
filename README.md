@@ -1,6 +1,6 @@
 # 车牌识别算法部署验证工具｜原型展示
 
-[打开验证准备原型](plate-capture-system_main.html) · [打开实时验证原型](capture.html)
+[打开验证准备原型](https://five-shrimp5k.github.io/Portfolio_LPR/plate-capture-system_main.html) · [打开实时验证原型](https://five-shrimp5k.github.io/Portfolio_LPR/capture.html)
 
 ## 原型界面
 
