@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>车牌识别算法部署验证工具 · 验证准备</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<style>
+        :root {
+            --qt-blue: #1677c8;
+            --qt-blue-dark: #075b9e;
+            --qt-border: #cbd5df;
+            --qt-panel: #f8fafc;
+            --qt-title: #e9eff5;
+        }
+        body {
+            background-color: #e9edf2;
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            color: #333;
+        }
+        /* 模拟 Qt 控件样式 */
+        .qt-card {
+            background: white;
+            border: 1px solid var(--qt-border);
+            border-radius: 6px;
+            box-shadow: 0 2px 7px rgba(15, 23, 42, .07);
+        }
+        .qt-btn {
+            background: #E1E1E1;
+            border: 1px solid #ADADAD;
+            padding: 4px 15px;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        .qt-btn:hover {
+            background: #E5F1FB;
+            border-color: #0078D7;
+        }
+        .qt-btn:active {
+            background: #CCE4F7;
+        }
+        .qt-btn:disabled,
+        .qt-input:disabled,
+        .qt-select:disabled {
+            cursor: not-allowed;
+            opacity: .52;
+            filter: grayscale(.35);
+        }
+        .qt-btn-primary {
+            background: var(--qt-blue);
+            color: white;
+            border-color: #005A9E;
+        }
+        .qt-btn-primary:hover {
+            background: #1984D8;
+            border-color: #005A9E;
+        }
+        .qt-input {
+            border: 1px solid #BDBDBD;
+            padding: 4px 8px;
+            font-size: 13px;
+            outline: none;
+            border-radius: 4px;
+        }
+        .qt-input:focus {
+            border-color: #0078D7;
+        }
+        .qt-select {
+            border: 1px solid #BDBDBD;
+            padding: 3px 6px;
+            font-size: 13px;
+            background: white;
+            border-radius: 4px;
+            outline: none;
+        }
+        .qt-select:focus {
+            border-color: var(--qt-blue);
+        }
+        .qt-label {
+            font-size: 13px;
+            color: #444;
+        }
+        .qt-title {
+            background: var(--qt-title);
+            padding: 7px 11px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--qt-border);
+            font-size: 14px;
+            color: #334155;
+        }
+        /* 状态指示灯 */
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        #headerDeviceStatus .bg-red-500 {
+            background: #d05252 !important;
+        }
+        #headerDeviceStatus .bg-green-500 {
+            background: #22a35a !important;
+        }
+        /* 视频占位动画 */
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        .video-scanner {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 255, 0, 0.5);
+            box-shadow: 0 0 10px #00FF00;
+            animation: scan 3s linear infinite;
+            display: none;
+        }
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(360px, 36%) minmax(0, 64%);
+            gap: 12px;
+            min-height: 714px;
+            overflow: visible;
+        }
+        .parameter-column {
+            display: grid;
+            grid-template-rows: minmax(290px, .9fr) minmax(380px, 1.1fr);
+            height: 100%;
+            min-height: 0;
+            gap: 12px;
+            overflow: visible;
+        }
+        .video-column {
+            min-width: 0;
+            min-height: 0;
+        }
+        .rtsp-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 12px;
+            align-content: space-between;
+        }
+        .parameter-field {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .video-surface {
+            background-color: #0a0f18;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+        .video-surface.playing {
+            background-image: linear-gradient(rgba(2, 8, 23, .28), rgba(2, 8, 23, .48)), url("assets/vehicles/beijing-taxi-full.jpg");
+        }
+        .timestamp-overlay {
+            background: rgba(0, 0, 0, .58);
+            color: #f8fafc;
+            font-family: Consolas, monospace;
+            letter-spacing: .04em;
+            text-shadow: 0 1px 2px #000;
+        }
+        .connection-card-body,
+        .rtsp-card-body {
+            display: flex;
+            min-height: 0;
+            flex: 1;
+            flex-direction: column;
+        }
+        .connection-card-body {
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .connection-status {
+            display: flex;
+            min-height: 36px;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid;
+            border-radius: 4px;
+            padding: 7px 10px;
+            font-size: 13px;
+        }
+        .connection-status .status-dot {
+            flex: none;
+            margin-right: 0;
+        }
+        .connection-status-main {
+            flex: none;
+            font-weight: 600;
+        }
+        .connection-status.is-offline {
+            border-color: #dfa0a0;
+            background: #fdf2f2;
+            color: #b42318;
+        }
+        .connection-status.is-online {
+            border-color: #86c49a;
+            background: #f0f9f3;
+            color: #16803c;
+        }
+        .connection-status.is-offline .status-dot {
+            background: #d05252 !important;
+        }
+        .connection-status.is-online .status-dot {
+            background: #22a35a !important;
+        }
+        .connection-status.is-pending {
+            border-color: #fde68a;
+            background: #fffbeb;
+            color: #a16207;
+        }
+        .rtsp-card-body {
+            justify-content: flex-start;
+            gap: 14px;
+        }
+        .rtsp-card-body .rtsp-form-grid {
+            flex: 1;
+        }
+        .compact-subgroup {
+            border: 1px solid #dbe4ed;
+            border-radius: 4px;
+            background: #f8fafc;
+            padding: 10px;
+        }
+        .device-locked {
+            position: relative;
+        }
+        .device-locked::after {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(248, 250, 252, .74);
+            color: #64748b;
+            content: attr(data-lock-message);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .03em;
+            pointer-events: none;
+        }
+        .hint-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .hint-bubble {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            z-index: 20;
+            width: max-content;
+            max-width: 260px;
+            transform: translateX(-50%);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background: #1f2937;
+            padding: 6px 9px;
+            color: white;
+            font-size: 11px;
+            line-height: 1.5;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s ease;
+            white-space: nowrap;
+        }
+        .hint-wrap:hover .hint-bubble,
+        .hint-wrap:focus-within .hint-bubble {
+            opacity: 1;
+        }
+        .task-prep-bar {
+            border: 1px solid #dbe4ed;
+            border-radius: 4px;
+            background: #f8fafc;
+            padding: 10px;
+        }
+        .readiness-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            border: 1px solid #d6dee8;
+            border-radius: 999px;
+            background: #fff;
+            padding: 4px 8px;
+            color: #64748b;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .readiness-chip.is-ready {
+            border-color: #9bcaaa;
+            background: #f0f9f3;
+            color: #16803c;
+        }
+        .readiness-chip.is-waiting {
+            border-color: #e3c98a;
+            background: #fffbeb;
+            color: #9a6509;
+        }
+        .network-fields {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+            gap: 8px;
+        }
+        .algorithm-update-row {
+            display: grid;
+            grid-template-columns: max-content minmax(0, 1fr);
+            align-items: center;
+            gap: 8px;
+        }
+        .algorithm-update-label {
+            white-space: nowrap;
+        }
+        .modal-header {
+            transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+        }
+        .modal-panel {
+            border-width: 1px;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .modal-panel.modal-success {
+            border-color: #86c49a;
+            box-shadow: 0 12px 34px rgba(22, 128, 60, .16);
+        }
+        .modal-panel.modal-error {
+            border-color: #dfa0a0;
+            box-shadow: 0 12px 34px rgba(180, 35, 24, .16);
+        }
+        .modal-panel.modal-warning {
+            border-color: #fcd34d;
+            box-shadow: 0 12px 34px rgba(146, 64, 14, .16);
+        }
+        .modal-panel.modal-info {
+            border-color: #93c5fd;
+            box-shadow: 0 12px 34px rgba(29, 78, 216, .14);
+        }
+        .modal-panel.modal-params {
+            width: 460px;
+            border-color: #94a9bf;
+            box-shadow: 0 12px 34px rgba(51, 78, 104, .18);
+        }
+        .modal-header.modal-success {
+            border-bottom-color: #86c49a;
+            background: #f0f9f3;
+            color: #16803c;
+        }
+        .modal-header.modal-error {
+            border-bottom-color: #dfa0a0;
+            background: #fdf2f2;
+            color: #b42318;
+        }
+        .modal-header.modal-warning {
+            border-bottom-color: #fde68a;
+            background: #fffbeb;
+            color: #a16207;
+        }
+        .modal-header.modal-info {
+            border-bottom-color: #bfdbfe;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+        .modal-header.modal-params {
+            border-bottom-color: #b8c9dc;
+            background: #e7eef6;
+            color: #334e68;
+        }
+        .modal-confirm.modal-success {
+            border-color: #86c49a;
+            background: #edf8f0;
+            color: #16803c;
+        }
+        .modal-confirm.modal-error {
+            border-color: #dfa0a0;
+            background: #fbeeee;
+            color: #b42318;
+        }
+        .modal-confirm.modal-warning {
+            border-color: #fcd34d;
+            background: #fffbeb;
+            color: #92400e;
+        }
+        .modal-confirm.modal-info,
+        .modal-confirm.modal-params {
+            border-color: #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+        #modalOverlay {
+            overflow-y: auto;
+            padding: 16px;
+        }
+        #modalPanel {
+            display: flex;
+            max-height: calc(100vh - 32px);
+            flex-direction: column;
+        }
+        #modalBody {
+            min-height: 0;
+            overflow-y: auto;
+        }
+        @media (max-width: 1040px) {
+            .main-grid { min-height: 0; grid-template-columns: 1fr; overflow: visible; }
+            .parameter-column { display: flex; flex-direction: column; height: auto; overflow: visible; }
+            .parameter-column > .qt-card { height: auto; }
+            .rtsp-card-body .rtsp-form-grid { flex: none; }
+            .video-column { min-height: 620px; }
+        }
+        @media (max-width: 560px) {
+            header {
+                height: auto !important;
+                min-height: 3rem;
+                flex-wrap: wrap;
+                gap: 6px 16px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+            }
+            .main-grid {
+                padding: 12px;
+            }
+            .rtsp-form-grid { grid-template-columns: 1fr; }
+            .network-fields { grid-template-columns: 1fr; }
+            .network-fields #btnConnect { width: 100%; }
+            .algorithm-update-row,
+            .device-ip-row,
+            .rtsp-control-row,
+            .lane-action-row {
+                grid-template-columns: 1fr;
+            }
+            .algorithm-update-label {
+                white-space: normal;
+            }
+            .video-column {
+                min-height: 680px;
+            }
+            .video-surface {
+                min-height: 280px !important;
+            }
+            #playVideoBtn,
+            #captureTestBtn {
+                width: 100%;
+            }
+            #captureReadiness {
+                white-space: normal !important;
+                text-align: left !important;
+            }
+            .modal-panel.modal-params {
+                width: 94vw;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen overflow-auto flex flex-col">
+<!-- 顶部标题栏 -->
+<header class="h-12 bg-[#2D2D2D] text-white flex items-center justify-between px-6 flex-none">
+<div class="flex items-center space-x-3">
+<iconify-icon class="text-2xl text-blue-400" icon="mdi:camera-iris"></iconify-icon>
+<span class="text-lg font-bold tracking-wider">车牌识别算法部署验证工具 · 验证准备</span>
+</div>
+<div class="flex items-center gap-4 text-xs text-gray-300"><span class="flex items-center" id="headerDeviceStatus"><span class="status-dot bg-red-500"></span>边缘设备未连接</span></div>
+</header>
+<!-- 主体内容 -->
+<main class="main-grid flex-1 p-4">
+<!-- 左侧参数配置区 -->
+<div class="parameter-column">
+<!-- 网络与边缘设备模块 -->
+<section class="qt-card overflow-hidden h-full flex flex-col">
+<div class="qt-title flex items-center gap-1.5"><iconify-icon class="text-base text-blue-600" icon="mdi:lan-connect"></iconify-icon>网络与边缘设备</div>
+<div class="connection-card-body p-3 gap-2">
+<div class="network-fields">
+<div class="parameter-field"><label class="qt-label">PC 本机 IPv4</label><input class="qt-input w-full" id="pcIp" placeholder="例如 192.168.1.155" type="text" value="192.168.1.155"/></div>
+<div class="parameter-field"><label class="qt-label">边缘盒 IP</label><input class="qt-input w-full" id="cameraIp" placeholder="例如 192.168.1.108" type="text" value="192.168.1.108"/></div>
+<button class="qt-btn h-[29px] w-24 self-end" id="btnConnect" onclick="toggleConnect()">连接设备</button>
+</div>
+<div class="connection-status is-offline" id="connectStatus">
+<span class="status-dot bg-red-500"></span>
+<span class="connection-status-main">设备未连接</span>
+</div>
+<div class="compact-subgroup space-y-2">
+<div class="algorithm-update-row">
+<span class="algorithm-update-label qt-label flex items-center gap-1">更新 AI 动态库：<span class="hint-wrap" tabindex="0"><iconify-icon class="cursor-help text-base text-gray-400" icon="mdi:information-outline"></iconify-icon><span class="hint-bubble">仅支持 libailib.so 文件</span></span></span>
+<div class="flex min-w-0 items-center gap-2">
+<button class="qt-btn flex-1 whitespace-nowrap" data-requires-connection disabled onclick="mockFileSelect()">选择更新文件</button>
+<span class="hidden shrink-0 truncate text-xs text-gray-500" id="firmwareName"></span>
+</div>
+</div>
+</div>
+<div class="compact-subgroup space-y-2">
+<div class="device-ip-row grid grid-cols-[112px_1fr] items-center gap-2">
+<span class="qt-label">修改设备 IP：</span>
+<input class="qt-input w-full" data-requires-connection disabled id="newIp" placeholder="输入新的边缘盒 IP" type="text"/>
+</div>
+<button class="qt-btn w-full" data-requires-connection disabled id="btnChangeIp" onclick="changeIp()">修改 IP</button>
+</div>
+</div>
+</section>
+<!-- RTSP参数配置模块 -->
+<section class="qt-card overflow-hidden h-full flex flex-col">
+<div class="qt-title flex items-center gap-1.5"><iconify-icon class="text-base text-blue-600" icon="mdi:tune-variant"></iconify-icon>RTSP参数配置</div>
+<div class="rtsp-card-body device-locked flex-1 p-3" data-lock-message="连接边缘设备后可配置" id="rtspConfigArea">
+<div class="rtsp-form-grid compact-subgroup">
+<div class="parameter-field">
+<label class="qt-label">视频编码：</label>
+<select class="qt-select w-full" data-requires-connection disabled id="encoding" onchange="updateConfigModes()">
+<option value="H.264">H.264</option>
+<option value="H.265">H.265</option>
+<option value="MJPEG">MJPEG</option>
+</select>
+</div>
+<div class="parameter-field">
+<label class="qt-label">配置模式：</label>
+<select class="qt-select w-full" data-requires-connection disabled id="configMode">
+<option>Baseline</option>
+<option>MainProfile</option>
+<option>HighProfile</option>
+</select>
+</div>
+<div class="parameter-field">
+<label class="qt-label">分辨率：</label>
+<select class="qt-select w-full" data-requires-connection disabled id="resolution">
+<option>1920*1080</option>
+<option>1280*720</option>
+<option>640*480</option>
+</select>
+</div>
+<div class="parameter-field">
+<label class="qt-label">I帧间隔：</label>
+<input class="qt-input w-full" data-requires-connection disabled id="iframe" max="128" min="1" type="number" value="30"/>
+</div>
+<div class="parameter-field">
+<label class="qt-label">帧率(fps)：</label>
+<select class="qt-select w-full" data-requires-connection disabled id="fps">
+<option>1</option>
+<option>15</option>
+<option>25</option>
+<option>30</option>
+</select>
+</div>
+<div class="parameter-field">
+<label class="qt-label">码率类型：</label>
+<select class="qt-select w-full" data-requires-connection disabled id="bitrateType">
+<option>CBR</option>
+<option>VBR</option>
+</select>
+</div>
+<div class="parameter-field">
+<label class="qt-label">码率(Kbps)：</label>
+<input class="qt-input w-full" data-requires-connection disabled id="bitrate" max="64000" min="64" type="number" value="6000"/>
+</div>
+<div class="parameter-field">
+<label class="qt-label">图像质量（1-9）：</label>
+<select class="qt-select w-full" data-requires-connection disabled id="quality">
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2 border-t pt-3">
+<button class="qt-btn w-full py-1.5" data-requires-connection disabled onclick="viewParams()">当前参数</button>
+<button class="qt-btn qt-btn-primary w-full py-1.5" data-requires-connection disabled onclick="modifyParams()">修改参数</button>
+</div>
+</div>
+</section>
+</div>
+<!-- 右侧视频预览区 -->
+<div class="video-column min-w-0">
+<section class="qt-card h-full flex flex-col overflow-hidden">
+<div class="qt-title flex items-center justify-between"><span class="flex items-center gap-1.5"><iconify-icon class="text-base text-blue-600" icon="mdi:cctv"></iconify-icon>RTSP 实时视频</span><span class="text-xs font-normal text-gray-500" id="streamState">等待播放</span></div>
+<div class="p-3 flex-1 flex flex-col space-y-3 min-h-0">
+<div class="rtsp-control-row grid grid-cols-[1fr_auto] gap-2">
+<input class="qt-input flex-1" data-requires-connection disabled id="rtspUrl" placeholder="RTSP URL" type="text" value="rtsp://192.168.1.108:554/live"/>
+<button class="qt-btn min-w-[96px]" data-requires-connection disabled id="playVideoBtn" onclick="playVideo()"><iconify-icon class="mr-1" icon="mdi:play"></iconify-icon>实时视频</button>
+</div>
+<div class="flex items-center text-xs">
+<label class="flex cursor-pointer items-center gap-2 text-gray-600"><input checked class="h-4 w-4" data-requires-connection disabled id="timestampToggle" onchange="toggleTimestamp()" type="checkbox"/>添加时间戳</label>
+</div>
+<div class="video-surface device-locked flex-1 rounded relative overflow-hidden flex items-center justify-center border-2 border-gray-600 min-h-[360px]" data-lock-message="请先连接边缘设备" id="videoSurface">
+<div class="text-gray-500 text-lg flex flex-col items-center" id="videoPlaceholder">
+<iconify-icon class="text-4xl mb-2" icon="mdi:video-off"></iconify-icon>
+<span>RTSP实时视频流</span>
+</div>
+<div class="video-scanner" id="videoScanner"></div>
+<div class="absolute bottom-4 left-4 text-green-400 text-sm hidden" id="playStatus">正在播放...</div>
+<div class="timestamp-overlay absolute right-4 top-4 hidden rounded px-3 py-1.5 text-sm" id="videoTimestamp"></div>
+</div>
+<div class="task-prep-bar space-y-2">
+<div class="lane-action-row grid grid-cols-[auto_140px_auto_minmax(0,1fr)_auto] items-center gap-2">
+<label class="qt-label whitespace-nowrap">抓拍车道：</label>
+<select class="qt-select w-full" data-requires-connection disabled id="mainLaneInput" onchange="updateCaptureReadiness()">
+<option value="车道1">车道1</option>
+<option value="车道2">车道2</option>
+<option value="车道3">车道3</option>
+<option value="车道4">车道4</option>
+<option value="车道5">车道5</option>
+<option value="车道6">车道6</option>
+<option value="车道7">车道7</option>
+<option value="车道8">车道8</option>
+</select>
+<button class="qt-btn whitespace-nowrap" data-requires-connection disabled onclick="saveMainLane()">保存车道</button>
+<div class="min-w-0 whitespace-nowrap text-right text-xs text-gray-500" id="captureReadiness">完成必需检查后可进入验证</div>
+<button class="qt-btn qt-btn-primary w-[160px] shrink-0 whitespace-nowrap py-2" disabled id="captureTestBtn" onclick="captureTest()">
+<iconify-icon class="mr-2" icon="mdi:camera-plus"></iconify-icon>
+                            进入抓拍验证
+                        <iconify-icon class="ml-1" icon="mdi:chevron-right"></iconify-icon></button>
+</div>
+<div class="flex flex-wrap items-center gap-1.5" aria-label="验证就绪检查">
+<span class="readiness-chip is-waiting" id="readinessNetwork"><iconify-icon icon="mdi:lan-pending"></iconify-icon>本机网络</span>
+<span class="readiness-chip is-waiting" id="readinessDevice"><iconify-icon icon="mdi:server-network-off"></iconify-icon>边缘盒</span>
+<span class="readiness-chip is-waiting" id="readinessVideo"><iconify-icon icon="mdi:video-off-outline"></iconify-icon>视频源</span>
+<span class="readiness-chip is-ready" id="readinessLane"><iconify-icon icon="mdi:map-marker-check-outline"></iconify-icon>车道1</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- 弹窗模拟器 -->
+<div class="fixed inset-0 bg-black bg-opacity-30 hidden z-50 flex items-center justify-center" id="modalOverlay">
+<div class="qt-card modal-panel modal-info bg-white shadow-xl w-96 max-w-[90vw] overflow-hidden" id="modalPanel">
+<div class="qt-title modal-header modal-info flex justify-between items-center" id="modalHeader">
+<div class="flex items-center gap-2"><iconify-icon class="text-lg" icon="mdi:information-outline" id="modalIcon"></iconify-icon><span class="text-sm font-bold" id="modalTitle">提示</span></div>
+<button class="text-gray-500 hover:text-red-500" onclick="closeModal()">
+<iconify-icon icon="mdi:close"></iconify-icon>
+</button>
+</div>
+<div class="p-6 text-sm" id="modalBody">
+                内容加载中...
+            </div>
+<div class="p-3 bg-gray-50 flex justify-end">
+<button class="qt-btn modal-confirm modal-info px-6" id="modalConfirm" onclick="closeModal()">确定</button>
+</div>
+</div>
+</div>
+<script>
+        let isConnected = false;
+        let isPlaying = false;
+        let activeStreamUrl = '';
+        let streamStartTimer = null;
+        let timestampTimer = null;
+        let algorithmFileSelected = false;
+        let savedLane = '车道1';
+        const mainStateStorageKey = 'plateDemoMainStateV1';
+        const validationContextStorageKey = 'plateDemoValidationContext';
+
+        function isValidIpv4(value) {
+            const parts = value.trim().split('.');
+            return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255 && String(Number(part)) === part);
+        }
+
+        function normalizeLaneValue(value) {
+            const text = String(value || '').trim();
+            const current = text.match(/^车道([1-8])$/);
+            if (current) return `车道${current[1]}`;
+            const legacy = text.match(/^Lane_0?([1-8])$/i);
+            if (legacy) return `车道${legacy[1]}`;
+            return '车道1';
+        }
+
+        function isValidRtspUrl(value) {
+            const match = value.trim().match(/^rtsp:\/\/([^/:]+)(?::(\d{1,5}))?(?:\/.*)?$/i);
+            if (!match || !isValidIpv4(match[1])) return false;
+            return !match[2] || Number(match[2]) <= 65535;
+        }
+
+        function renderConnectionStatus(state, title) {
+            const status = document.getElementById('connectStatus');
+            const dotClass = state === 'online' ? 'bg-green-500' : state === 'pending' ? 'bg-yellow-400' : 'bg-red-500';
+            status.className = `connection-status is-${state}`;
+            status.innerHTML = `<span class="status-dot ${dotClass}"></span><span class="connection-status-main">${title}</span>`;
+        }
+
+        function setConnectionState(connected, message) {
+            isConnected = connected;
+            const btn = document.getElementById('btnConnect');
+            const headerStatus = document.getElementById('headerDeviceStatus');
+            btn.disabled = false;
+            btn.innerText = connected ? '断开' : '连接设备';
+            renderConnectionStatus(connected ? 'online' : 'offline', message);
+            headerStatus.innerHTML = connected
+                ? `<span class="status-dot bg-green-500"></span>演示设备已连接 · ${document.getElementById('cameraIp').value.trim()}`
+                : '<span class="status-dot bg-red-500"></span>边缘设备未连接';
+            syncConnectionGate();
+        }
+
+        function syncConnectionGate() {
+            document.querySelectorAll('[data-requires-connection]').forEach(control => {
+                control.disabled = !isConnected;
+            });
+            document.getElementById('cameraIp').disabled = isConnected;
+            document.getElementById('pcIp').disabled = isConnected;
+            document.getElementById('rtspConfigArea').classList.toggle('device-locked', !isConnected);
+            document.getElementById('videoSurface').classList.toggle('device-locked', !isConnected);
+            updateCaptureReadiness();
+        }
+
+        function updateCaptureReadiness() {
+            const lane = savedLane;
+            const button = document.getElementById('captureTestBtn');
+            const readiness = document.getElementById('captureReadiness');
+            const pcReady = isConnected && isValidIpv4(document.getElementById('pcIp').value.trim());
+            const laneReady = Boolean(lane);
+            setReadinessChip('readinessNetwork', pcReady, '本机网络', 'mdi:lan-connect', 'mdi:lan-pending');
+            setReadinessChip('readinessDevice', isConnected, '边缘盒', 'mdi:server-network', 'mdi:server-network-off');
+            setReadinessChip('readinessVideo', isPlaying, '视频源', 'mdi:video-check-outline', 'mdi:video-off-outline');
+            setReadinessChip('readinessLane', laneReady, lane || '未选车道', 'mdi:map-marker-check-outline', 'mdi:map-marker-alert-outline');
+            const ready = pcReady && isConnected && isPlaying && laneReady;
+            button.disabled = !ready;
+            readiness.className = ready ? 'min-w-0 whitespace-nowrap text-right text-xs font-medium text-green-700' : 'min-w-0 whitespace-nowrap text-right text-xs text-amber-700';
+            readiness.textContent = ready ? '准备完成，可以开始本轮验证' : getReadinessHint(pcReady, laneReady);
+        }
+
+        function setReadinessChip(id, ready, label, readyIcon, waitingIcon) {
+            const chip = document.getElementById(id);
+            chip.className = `readiness-chip ${ready ? 'is-ready' : 'is-waiting'}`;
+            chip.innerHTML = `<iconify-icon icon="${ready ? readyIcon : waitingIcon}"></iconify-icon>${label}`;
+        }
+
+        function getReadinessHint(pcReady, laneReady) {
+            if (!isConnected || !pcReady) return '请完成网络与设备连接';
+            if (!isPlaying) return '请播放并确认 RTSP 视频源';
+            if (!laneReady) return '请选择本轮抓拍车道';
+            return '完成必需检查后可进入验证';
+        }
+
+        function saveMainLane() {
+            const lane = document.getElementById('mainLaneInput').value.trim();
+            if (!lane) return showModal('无法保存', '请选择抓拍车道。', 'error');
+            savedLane = lane;
+            localStorage.setItem('plateDemoLane', lane);
+            updateCaptureReadiness();
+            saveMainPageState();
+            showModal('保存成功', `抓拍车道已设置为 <b>${lane.replace(/[&<>"']/g, '')}</b>。`, 'success');
+        }
+
+        // 边缘设备连接切换（Web Demo 模拟）
+        function toggleConnect() {
+            const btn = document.getElementById('btnConnect');
+            if (!isConnected) {
+                const ip = document.getElementById('cameraIp').value.trim();
+                const pcIp = document.getElementById('pcIp').value.trim();
+                if (!isValidIpv4(pcIp)) return showModal('网络配置错误', '请输入符合 IPv4 规范的 PC 本机地址。', 'error');
+                if (!isValidIpv4(ip)) return showModal('连接失败', '请输入符合 IPv4 规范的边缘盒 IP 地址。', 'error');
+                btn.disabled = true;
+                btn.innerText = '连接中…';
+                document.getElementById('cameraIp').disabled = true;
+                document.getElementById('pcIp').disabled = true;
+                renderConnectionStatus('pending', '正在模拟连接边缘设备');
+                document.getElementById('headerDeviceStatus').innerHTML = '<span class="status-dot bg-yellow-400"></span>正在模拟连接';
+                setTimeout(() => setConnectionState(true, '演示设备已连接 · 网口1'), 650);
+            } else {
+                stopVideo('设备连接已断开');
+                setConnectionState(false, '设备已断开');
+            }
+        }
+
+        // 文件更新模拟
+        function mockFileSelect() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.so';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.name !== 'libailib.so') {
+                    algorithmFileSelected = false;
+                    renderAlgorithmState();
+                    showModal('文件选择错误', '文件选择错误！<br><span class="mt-2 block text-xs text-gray-500">仅允许文件名完全为 <b>libailib.so</b> 的升级文件。</span>', 'error');
+                    return;
+                }
+                algorithmFileSelected = true;
+                renderAlgorithmState();
+                showModal('模拟文件校验完成', `已验证设备端 AI 算法动态库：<b>${file.name}</b><br><span class="mt-2 block text-xs text-gray-500">Web Demo 只模拟文件选择与校验。原 Qt 工具负责上传；上传完成不代表边缘盒已经成功加载算法。</span>`, 'success');
+            };
+            input.click();
+        }
+
+        function renderAlgorithmState() {
+            const label = document.getElementById('firmwareName');
+            label.className = algorithmFileSelected ? 'shrink-0 truncate text-xs text-green-700' : 'hidden';
+            label.innerHTML = algorithmFileSelected
+                ? '<iconify-icon class="mr-1 align-middle" icon="mdi:check-circle-outline"></iconify-icon>libailib.so 已校验'
+                : '';
+        }
+
+        // 修改IP
+        function changeIp() {
+            const newIp = document.getElementById('newIp').value.trim();
+            if (!isValidIpv4(newIp)) return showModal('修改失败', '请输入符合 IPv4 规范的新 IP 地址。', 'error');
+            if (!isConnected) return showModal('修改失败', '请先连接边缘设备，再修改设备 IP。', 'error');
+            const button = document.getElementById('btnChangeIp');
+            button.disabled = true;
+            button.innerText = '修改中…';
+            setConnectionState(false, '正在应用新 IP…');
+            renderConnectionStatus('pending', '正在切换 IP');
+            document.getElementById('btnConnect').disabled = true;
+            document.getElementById('cameraIp').disabled = true;
+            document.getElementById('headerDeviceStatus').innerHTML = '<span class="status-dot bg-yellow-400"></span>正在模拟切换设备 IP';
+            setTimeout(() => {
+                document.getElementById('cameraIp').value = newIp;
+                document.getElementById('rtspUrl').value = `rtsp://${newIp}:554/live`;
+                document.getElementById('newIp').value = '';
+                button.innerText = '修改 IP';
+                document.getElementById('btnConnect').disabled = true;
+                document.getElementById('btnConnect').innerText = '重连中…';
+                setTimeout(() => {
+                    setConnectionState(true, '演示设备已重新连接 · 网口1');
+                    showModal('模拟 IP 修改完成', `边缘盒 IP 已更新为 <b>${newIp}</b>，并已模拟重新连接。`, 'success');
+                }, 650);
+            }, 700);
+        }
+
+        // 联动编码模式
+        function updateConfigModes() {
+            const encoding = document.getElementById('encoding').value;
+            const configMode = document.getElementById('configMode');
+            configMode.innerHTML = '';
+            
+            if (encoding === 'H.264') {
+                configMode.innerHTML = '<option>Baseline</option><option>MainProfile</option><option>HighProfile</option>';
+            } else if (encoding === 'H.265') {
+                configMode.innerHTML = '<option>MainProfile</option><option>Main</option>';
+            } else {
+                configMode.innerHTML = '<option>Baseline</option>';
+            }
+        }
+
+        function readParams() {
+            return {
+                encoding: document.getElementById('encoding').value,
+                mode: document.getElementById('configMode').value,
+                res: document.getElementById('resolution').value,
+                iframe: Number(document.getElementById('iframe').value),
+                fps: document.getElementById('fps').value,
+                bitrateType: document.getElementById('bitrateType').value,
+                bitrate: Number(document.getElementById('bitrate').value),
+                quality: document.getElementById('quality').value
+            };
+        }
+
+        function validateParams(params) {
+            if (!Number.isInteger(params.iframe) || params.iframe < 1 || params.iframe > 128) {
+                showModal('参数错误', 'I帧间隔超出范围！<br><span class="mt-2 block text-xs text-gray-500">允许范围：1–128。</span>', 'error');
+                return false;
+            }
+            if (!Number.isInteger(params.bitrate) || params.bitrate < 64 || params.bitrate > 64000) {
+                showModal('参数错误', '码率超出范围！<br><span class="mt-2 block text-xs text-gray-500">允许范围：64–64000 Kbps。</span>', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // 查看参数
+        function viewParams() {
+            const params = readParams();
+            if (!validateParams(params)) return;
+            const html = `
+                <div class="grid grid-cols-2 gap-x-5 gap-y-2">
+                    <span class="text-gray-500">视频编码</span><b>${params.encoding}</b>
+                    <span class="text-gray-500">配置模式</span><b>${params.mode}</b>
+                    <span class="text-gray-500">分辨率</span><b>${params.res}</b>
+                    <span class="text-gray-500">I 帧间隔</span><b>${params.iframe}</b>
+                    <span class="text-gray-500">帧率</span><b>${params.fps} fps</b>
+                    <span class="text-gray-500">码率类型</span><b>${params.bitrateType}</b>
+                    <span class="text-gray-500">码率</span><b>${params.bitrate} Kbps</b>
+                    <span class="text-gray-500">图像质量</span><b>${params.quality}</b>
+                </div>
+            `;
+            showModal('当前RTSP配置参数', html, 'params');
+        }
+
+        // 修改参数
+        function modifyParams() {
+            const params = readParams();
+            if (!validateParams(params)) return;
+            const shouldRestart = isPlaying;
+            const url = activeStreamUrl || document.getElementById('rtspUrl').value.trim();
+            if (shouldRestart) stopVideo('正在应用新参数…');
+            showModal('配置成功', `RTSP 参数已更新。${shouldRestart ? '当前视频流将自动重启。' : '未检测到正在播放的视频流。'}`, 'success');
+            if (shouldRestart) setTimeout(() => startVideo(url, '参数已生效，流已重启'), 900);
+        }
+
+        // 播放视频动画
+        function playVideo() {
+            const url = document.getElementById('rtspUrl').value.trim();
+            if (isPlaying && url === activeStreamUrl) return stopVideo('视频流已停止');
+            if (!isValidRtspUrl(url)) return showModal('RTSP 地址错误', '请输入包含有效 IPv4 地址的 RTSP URL。<br><span class="mt-2 block text-xs text-gray-500">例如：rtsp://192.168.1.108:554/live</span>', 'error');
+            if (isPlaying || streamStartTimer) stopVideo('正在切换视频流…');
+            startVideo(url, '正在播放');
+        }
+
+        function startVideo(url, readyText) {
+            const placeholder = document.getElementById('videoPlaceholder');
+            activeStreamUrl = url;
+            isPlaying = false;
+            placeholder.classList.remove('hidden');
+            placeholder.innerHTML = '<iconify-icon icon="mdi:loading" class="text-4xl animate-spin mb-2"></iconify-icon><span>正在停止旧流并缓冲新流…</span>';
+            document.getElementById('streamState').innerText = '连接中';
+            streamStartTimer = setTimeout(() => {
+                streamStartTimer = null;
+                isPlaying = true;
+                placeholder.classList.add('hidden');
+                document.getElementById('videoSurface').classList.add('playing');
+                document.getElementById('videoScanner').style.display = 'block';
+                document.getElementById('playStatus').classList.remove('hidden');
+                document.getElementById('playStatus').innerText = `${readyText} · ${url}`;
+                document.getElementById('streamState').innerText = '1080P · 1 fps · 演示流';
+                document.getElementById('playVideoBtn').innerHTML = '<iconify-icon class="mr-1" icon="mdi:stop"></iconify-icon>停止视频';
+                toggleTimestamp();
+                updateCaptureReadiness();
+            }, 850);
+        }
+
+        function stopVideo(stateText = '等待播放') {
+            clearTimeout(streamStartTimer);
+            clearInterval(timestampTimer);
+            streamStartTimer = null;
+            isPlaying = false;
+            activeStreamUrl = '';
+            document.getElementById('videoSurface').classList.remove('playing');
+            document.getElementById('videoScanner').style.display = 'none';
+            document.getElementById('playStatus').classList.add('hidden');
+            document.getElementById('videoTimestamp').classList.add('hidden');
+            document.getElementById('videoPlaceholder').classList.remove('hidden');
+            document.getElementById('videoPlaceholder').innerHTML = '<iconify-icon class="text-4xl mb-2" icon="mdi:video-off"></iconify-icon><span>RTSP实时视频流</span>';
+            document.getElementById('streamState').innerText = stateText;
+            document.getElementById('playVideoBtn').innerHTML = '<iconify-icon class="mr-1" icon="mdi:play"></iconify-icon>实时视频';
+            updateCaptureReadiness();
+        }
+
+        function updateVideoTimestamp() {
+            document.getElementById('videoTimestamp').innerText = new Date().toLocaleString('zh-CN', { hour12: false });
+        }
+
+        function toggleTimestamp() {
+            clearInterval(timestampTimer);
+            const visible = document.getElementById('timestampToggle').checked && isPlaying;
+            document.getElementById('videoTimestamp').classList.toggle('hidden', !visible);
+            if (visible) {
+                updateVideoTimestamp();
+                timestampTimer = setInterval(updateVideoTimestamp, 1000);
+            }
+        }
+
+        // 抓拍测试校验
+        function captureTest() {
+            const lane = savedLane;
+            
+            if (!isConnected) {
+                showModal('操作受限', '请先连接边缘设备！', 'warning');
+            } else if (!isPlaying) {
+                showModal('操作受限', '请先播放并确认 RTSP 视频源。', 'warning');
+            } else if (!lane) {
+                showModal('操作受限', '请先设置抓拍车道！', 'warning');
+            } else {
+                const context = {
+                    pcIp: document.getElementById('pcIp').value.trim(),
+                    edgeIp: document.getElementById('cameraIp').value.trim(),
+                    rtspUrl: document.getElementById('rtspUrl').value.trim(),
+                    lane,
+                    algorithmState: algorithmFileSelected ? 'updated' : 'existing',
+                    algorithmFile: algorithmFileSelected ? 'libailib.so' : '',
+                    videoVerified: true,
+                    enteredAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+                    deviceConfig: {
+                        algorithm: algorithmFileSelected ? { source: 'updated', file: 'libailib.so' } : { source: 'existing', file: 'device-current' },
+                        video: { rtspUrl: document.getElementById('rtspUrl').value.trim(), timestampEnabled: document.getElementById('timestampToggle').checked, params: readParams() },
+                        lane,
+                        capture: {
+                            trigger: 'virtual',
+                            virtualLoop: [{ x: 350, y: 400 }, { x: 350, y: 600 }, { x: 650, y: 600 }, { x: 650, y: 400 }],
+                            limit: 20,
+                            triggerParams: {}
+                        }
+                    }
+                };
+                localStorage.setItem(validationContextStorageKey, JSON.stringify(context));
+                saveMainPageState();
+                window.location.href = 'capture.html';
+            }
+        }
+
+        // 弹窗逻辑
+        function showModal(title, body, type = 'info') {
+            const modalTypes = ['success', 'error', 'warning', 'info', 'params'];
+            const safeType = modalTypes.includes(type) ? type : 'info';
+            const iconMap = {
+                success: 'mdi:check-circle-outline',
+                error: 'mdi:close-circle-outline',
+                warning: 'mdi:alert-outline',
+                info: 'mdi:information-outline',
+                params: 'mdi:tune-variant'
+            };
+            const panel = document.getElementById('modalPanel');
+            const header = document.getElementById('modalHeader');
+            const confirm = document.getElementById('modalConfirm');
+            modalTypes.forEach(item => {
+                panel.classList.remove(`modal-${item}`);
+                header.classList.remove(`modal-${item}`);
+                confirm.classList.remove(`modal-${item}`);
+            });
+            panel.classList.add(`modal-${safeType}`);
+            header.classList.add(`modal-${safeType}`);
+            confirm.classList.add(`modal-${safeType}`);
+            document.getElementById('modalIcon').setAttribute('icon', iconMap[safeType]);
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerHTML = body;
+            document.getElementById('modalOverlay').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.add('hidden');
+        }
+
+        function saveMainPageState() {
+            const params = readParams();
+            const state = {
+                connected: isConnected,
+                playing: isPlaying || Boolean(streamStartTimer),
+                activeStreamUrl: activeStreamUrl || document.getElementById('rtspUrl').value.trim(),
+                pcIp: document.getElementById('pcIp').value.trim(),
+                cameraIp: document.getElementById('cameraIp').value.trim(),
+                newIp: document.getElementById('newIp').value.trim(),
+                firmwareSelected: algorithmFileSelected,
+                lane: savedLane,
+                rtspUrl: document.getElementById('rtspUrl').value,
+                timestampEnabled: document.getElementById('timestampToggle').checked,
+                params
+            };
+            localStorage.setItem(mainStateStorageKey, JSON.stringify(state));
+        }
+
+        function restoreMainPageState() {
+            let state;
+            try {
+                state = JSON.parse(localStorage.getItem(mainStateStorageKey) || 'null');
+            } catch (error) {
+                localStorage.removeItem(mainStateStorageKey);
+                return false;
+            }
+            if (!state || typeof state !== 'object') return false;
+
+            if (state.pcIp) document.getElementById('pcIp').value = state.pcIp;
+            if (state.cameraIp) document.getElementById('cameraIp').value = state.cameraIp;
+            document.getElementById('newIp').value = state.newIp || '';
+            savedLane = normalizeLaneValue(state.lane || localStorage.getItem('plateDemoLane'));
+            document.getElementById('mainLaneInput').value = savedLane;
+            if (state.rtspUrl) document.getElementById('rtspUrl').value = state.rtspUrl;
+            document.getElementById('timestampToggle').checked = state.timestampEnabled !== false;
+            algorithmFileSelected = Boolean(state.firmwareSelected);
+            renderAlgorithmState();
+
+            if (state.params) {
+                document.getElementById('encoding').value = state.params.encoding || 'H.264';
+                updateConfigModes();
+                document.getElementById('configMode').value = state.params.mode || 'Baseline';
+                document.getElementById('resolution').value = state.params.res || '1920*1080';
+                document.getElementById('iframe').value = state.params.iframe ?? 30;
+                document.getElementById('fps').value = state.params.fps || '1';
+                document.getElementById('bitrateType').value = state.params.bitrateType || 'CBR';
+                document.getElementById('bitrate').value = state.params.bitrate ?? 6000;
+                document.getElementById('quality').value = state.params.quality || '1';
+            }
+
+            if (state.connected) {
+                setConnectionState(true, '演示设备已连接 · 网口1');
+                if (state.playing) startVideo(state.activeStreamUrl || state.rtspUrl, '已恢复播放');
+            } else {
+                syncConnectionGate();
+            }
+            return true;
+        }
+
+        if (!restoreMainPageState()) {
+            const savedMainLane = localStorage.getItem('plateDemoLane');
+            savedLane = normalizeLaneValue(savedMainLane);
+            document.getElementById('mainLaneInput').value = savedLane;
+            syncConnectionGate();
+        }
+        window.addEventListener('pagehide', saveMainPageState);
+    </script>
+</body>
+</html>

@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>实时验证</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.js"></script>
+<style>
+        :root {
+            --qt-blue: #1677c8;
+            --qt-blue-dark: #075b9e;
+            --qt-border: #cbd5df;
+            --qt-panel: #f8fafc;
+            --qt-title: #e9eff5;
+        }
+        body {
+            background-color: #e9edf2;
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            color: #333;
+        }
+        .qt-card {
+            background: white;
+            border: 1px solid var(--qt-border);
+            border-radius: 6px;
+            box-shadow: 0 2px 7px rgba(15, 23, 42, .07);
+        }
+        .qt-btn {
+            background: #E1E1E1;
+            border: 1px solid #ADADAD;
+            padding: 4px 15px;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        .qt-btn:hover {
+            background: #E5F1FB;
+            border-color: #0078D7;
+        }
+        .qt-btn:active {
+            background: #CCE4F7;
+        }
+        .qt-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .qt-btn-primary {
+            background: var(--qt-blue);
+            color: white;
+            border-color: #005A9E;
+        }
+        .qt-input {
+            border: 1px solid #BDBDBD;
+            padding: 4px 8px;
+            font-size: 13px;
+            outline: none;
+            border-radius: 4px;
+        }
+        .qt-label {
+            font-size: 13px;
+            color: #444;
+        }
+        .qt-title {
+            background: var(--qt-title);
+            padding: 7px 11px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--qt-border);
+            font-size: 14px;
+            color: #334155;
+        }
+        /* 表格样式 */
+        .qt-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .qt-table th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #eaf0f6;
+            border: 1px solid #D0D0D0;
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .qt-table td {
+            border: 1px solid #D0D0D0;
+            padding: 6px 8px;
+            background: white;
+        }
+        .qt-table tr:hover td {
+            background: #F0F7FF;
+        }
+        .qt-table tr.record-row {
+            cursor: pointer;
+        }
+        .qt-table tr.record-selected td {
+            background: #DCEEFF;
+        }
+        .control-panel {
+            background: transparent;
+        }
+        .verification-main {
+            display: grid;
+            grid-template-rows: 430px minmax(220px, 1fr);
+            gap: 12px;
+            min-height: calc(100vh - 3rem);
+            overflow: visible;
+        }
+        .verification-workspace {
+            display: grid;
+            grid-template-columns: minmax(255px, 3fr) minmax(0, 7fr);
+            gap: 12px;
+            height: auto;
+            min-height: 0;
+        }
+        .left-capture-panel,
+        .right-preview-stack,
+        .right-preview-stack > .qt-card {
+            min-width: 0;
+            min-height: 0;
+        }
+        .verification-records {
+            min-height: 0;
+        }
+        .left-capture-content {
+            display: grid;
+            grid-template-rows: minmax(150px, .85fr) 1px minmax(190px, 1.15fr);
+            min-height: 0;
+            flex: 1;
+            gap: 10px;
+            overflow: visible;
+            padding: 10px;
+        }
+        .control-subsection {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid #dbe4ed;
+            border-radius: 5px;
+            background: #f8fafc;
+            padding: 12px;
+        }
+        .subsection-heading {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 8px;
+            color: #475569;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .task-status-row {
+            display: flex;
+            min-width: 0;
+            align-items: center;
+            font-size: 13px;
+        }
+        .task-actions {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 7px;
+            margin-top: auto;
+            padding-top: 12px;
+        }
+        .control-divider {
+            height: 1px;
+            background: #dbe4ed;
+        }
+        .right-preview-stack {
+            display: grid;
+            grid-template-rows: minmax(0, 1fr);
+            gap: 12px;
+        }
+        .detail-card-content {
+            display: flex;
+            min-height: 0;
+            flex: 1;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f8fafc;
+            padding: 10px;
+        }
+        .detail-card-content .plate-result-card {
+            flex: none;
+        }
+        .detail-card-content .detail-meta {
+            flex: 1;
+            min-height: 0;
+        }
+        .detail-card-content .review-panel {
+            flex: none;
+        }
+        .detail-card-title {
+            min-height: 34px;
+        }
+        .current-detail-card {
+            --detail-columns: minmax(0, 1.58fr) minmax(132px, .42fr);
+        }
+        .detail-status-badge {
+            display: inline-flex;
+            min-width: 0;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            padding: 0;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .detail-status-badge > span {
+            justify-content: center;
+        }
+        .detail-status-badge iconify-icon {
+            font-size: 16px;
+        }
+        .detail-primary-grid {
+            display: grid;
+            flex: 1;
+            min-height: 0;
+            grid-template-columns: var(--detail-columns);
+            align-items: stretch;
+            gap: 10px;
+        }
+        .detail-primary-grid .plate-preview-frame {
+            height: auto;
+            min-height: 82px;
+        }
+        .detail-primary-grid .plate-result-copy {
+            align-items: center;
+            border: 1px solid #d5dee8;
+            border-radius: 5px;
+            background: #fff;
+            padding: 7px 10px;
+        }
+        .detail-primary-grid .plate-number {
+            min-width: 0;
+            padding: 7px 8px;
+            font-size: 17px;
+        }
+        .current-detail-card .detail-meta {
+            display: grid;
+            flex: none;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: minmax(44px, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .current-detail-card .detail-meta-row {
+            min-height: 44px;
+        }
+        .detail-action-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            min-width: 0;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .detail-action-row .review-panel {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-column: span 2;
+            width: 100%;
+            min-width: 0;
+            align-items: center;
+            gap: 5px;
+            margin-top: 0;
+        }
+        .detail-action-row .review-panel > span,
+        .detail-action-row .review-panel .review-tag {
+            width: 100%;
+            min-width: 0;
+        }
+        .detail-action-row .review-options {
+            display: contents;
+        }
+        .detail-action-row .review-btn {
+            width: 100%;
+            min-width: 0;
+            padding-right: 8px;
+            padding-left: 8px;
+        }
+        .detail-navigation {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-column: 3;
+            width: 100%;
+            min-width: 0;
+            gap: 5px;
+            margin-left: 0;
+        }
+        .detail-navigation .qt-btn {
+            width: 100%;
+            min-width: 0;
+            padding-right: 8px;
+            padding-left: 8px;
+        }
+        .left-capture-content .qt-btn,
+        .detail-action-row .qt-btn {
+            height: 30px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            font-size: 13px;
+            line-height: 1.2;
+        }
+        .detail-action-row .review-panel > span,
+        .detail-action-row .review-tag {
+            height: 30px;
+        }
+        .detail-action-row .review-tag {
+            padding-top: 4px;
+            padding-bottom: 4px;
+            font-size: 13px;
+        }
+        .record-full-image-cell {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+        }
+        .record-full-image-cell .record-view-full-btn {
+            flex: none;
+        }
+        .aligned-module-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 34fr) minmax(0, 66fr);
+            gap: 12px;
+        }
+        .segment-option input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .segment-surface {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-height: 30px;
+            padding: 4px 10px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all .18s ease;
+        }
+        .segment-option input:checked + .segment-surface {
+            border-color: #2786d8;
+            background: #e8f4ff;
+            color: #075b9e;
+            box-shadow: inset 0 0 0 1px rgba(39,134,216,.1);
+            font-weight: 700;
+        }
+        .plate-crop {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform .2s ease;
+        }
+        .plate-result-card {
+            display: grid;
+            grid-template-columns: minmax(150px, 1.25fr) minmax(125px, .75fr);
+            gap: 8px;
+            width: 100%;
+            border: 1px solid #d5dee8;
+            border-radius: 6px;
+            background: white;
+            padding: 6px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .06);
+        }
+        .plate-preview-frame {
+            height: 56px;
+            border: 1px solid #aebdca;
+            border-radius: 4px;
+            background: #111827;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .08);
+        }
+        .result-placeholder {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #94a3b8;
+            font-size: 12px;
+            text-align: center;
+        }
+        .result-placeholder iconify-icon {
+            color: #64748b;
+            font-size: 28px;
+        }
+        .table-image-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed #cbd5e1;
+            background: #f8fafc;
+            color: #94a3b8;
+            font-size: 10px;
+            text-align: center;
+        }
+        .plate-result-copy {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+        }
+        .plate-result-caption {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .plate-number {
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid #76a9d2;
+            border-radius: 4px;
+            background: linear-gradient(180deg, #eaf5ff 0%, #d9edfc 100%);
+            padding: 7px 8px;
+            color: #075b9e;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            line-height: 1;
+            text-align: center;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .image-pan-stage {
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+        .image-pan-target {
+            transform-origin: center center;
+            transition: transform .16s ease;
+            will-change: transform;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        .image-pan-target.is-zoomed {
+            cursor: grab;
+        }
+        .image-pan-target.is-dragging {
+            cursor: grabbing;
+            transition: none !important;
+        }
+        .zoom-readout {
+            min-width: 48px;
+            color: #475569;
+            font-size: 12px;
+            text-align: center;
+        }
+        .viewer-dialog {
+            width: min(78vw, 1120px) !important;
+            max-width: 94vw;
+        }
+        .viewer-meta-bar {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            border: 1px solid #dbe4ed;
+            border-radius: 4px;
+            background: #f8fafc;
+            padding: 10px 14px;
+            color: #334155;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .viewer-meta-bar b {
+            margin-right: 8px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        #loopSvg {
+            touch-action: none;
+        }
+        #loopSvg .loop-handle {
+            pointer-events: all;
+            cursor: move;
+        }
+        .loop-editor-stage {
+            position: relative;
+            height: min(58vh, 560px);
+            overflow: hidden;
+            border: 1px solid #64748b;
+            border-radius: 4px;
+            background: #0f172a;
+            touch-action: none;
+        }
+        .loop-editor-stage img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        .loop-editor-stage svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        .loop-editor-stage .loop-editor-handle {
+            cursor: move;
+        }
+        .capture-pulse {
+            animation: capturePulse 1.2s ease-in-out infinite;
+        }
+        .progress-track {
+            height: 14px;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            background: #e2e8f0;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, .12);
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #16a34a, #22c55e);
+            transition: width .25s ease;
+        }
+        @keyframes capturePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+        .config-label {
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .loop-status {
+            border: 1px solid #dbe4ed;
+            border-radius: 4px;
+            background: #f8fafc;
+            padding: 8px 9px;
+            color: #475569;
+            font-size: 13px;
+        }
+        .detail-meta {
+            display: grid;
+            flex: 1;
+            min-height: 0;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            width: 100%;
+        }
+        .detail-meta-row {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            justify-content: center;
+            gap: 3px;
+            border: 1px solid #dbe4ed;
+            border-radius: 5px;
+            background: white;
+            padding: 5px 9px;
+            font-size: 13px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+        }
+        .detail-meta-row > span:first-child {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .detail-value {
+            overflow: hidden;
+            color: #1f2937;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.2;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .record-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .record-toolbar > div:first-child {
+            flex: 1 1 280px;
+            min-width: 0;
+        }
+        .record-toolbar > div:last-child {
+            display: flex;
+            flex: 0 1 auto;
+            min-width: 0;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .validation-context-bar {
+            display: grid;
+            grid-template-columns: auto repeat(5, minmax(0, 1fr)) auto;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 11px;
+        }
+        .context-item {
+            min-width: 0;
+            border-left: 1px solid #dbe4ed;
+            padding-left: 10px;
+        }
+        .context-item span {
+            display: block;
+            color: #64748b;
+            font-size: 10px;
+        }
+        .context-item b {
+            display: block;
+            overflow: hidden;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 600;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .review-panel {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            gap: 7px;
+            margin-top: 6px;
+        }
+        .review-options {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 5px;
+        }
+        .review-btn.is-active {
+            border-color: #2786d8;
+            background: #e8f4ff;
+            color: #075b9e;
+            font-weight: 700;
+        }
+        .review-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 56px;
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            background: #f8fafc;
+            padding: 2px 7px;
+            color: #64748b;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .review-tag.correct { border-color: #9bcaaa; background: #f0f9f3; color: #16803c; }
+        .review-tag.error, .review-tag.missed { border-color: #dfa0a0; background: #fdf2f2; color: #b42318; }
+        .verification-records .qt-table {
+            font-size: 13px;
+            min-width: 980px;
+        }
+        .verification-records .qt-table .qt-btn,
+        .verification-records .qt-table .review-tag,
+        .verification-records .qt-table .table-image-placeholder {
+            font-size: 13px;
+        }
+        .summary-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            border: 1px solid #dbe4ed;
+            border-radius: 999px;
+            background: #fff;
+            padding: 2px 7px;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        #modalOverlay {
+            overflow-y: auto;
+            padding: 16px;
+        }
+        #modalPanel {
+            display: flex;
+            max-height: calc(100vh - 32px);
+            flex-direction: column;
+        }
+        #modalBody {
+            min-height: 0;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .verification-workspace {
+                grid-template-columns: minmax(220px, 34fr) minmax(0, 66fr);
+            }
+            .record-toolbar > div:last-child {
+                flex: 1 1 100%;
+                justify-content: flex-start;
+            }
+        }
+        @media (max-width: 700px) {
+            header {
+                height: auto !important;
+                min-height: 3rem;
+                flex-wrap: wrap;
+                gap: 6px 16px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+            }
+            .verification-main {
+                display: block;
+                min-height: 0;
+                overflow: visible;
+            }
+            .verification-workspace {
+                height: auto;
+                min-height: 0;
+                grid-template-columns: 1fr;
+            }
+            .left-capture-panel {
+                min-height: 0;
+            }
+            .left-capture-content {
+                grid-template-rows: auto 1px auto;
+            }
+            .right-preview-stack {
+                min-height: 360px;
+                grid-template-rows: auto;
+            }
+            .current-detail-card {
+                min-height: 360px;
+            }
+            .detail-card-content {
+                overflow: visible;
+            }
+            .detail-action-row {
+                grid-template-columns: 1fr;
+            }
+            .detail-action-row .review-panel,
+            .detail-navigation {
+                grid-column: auto;
+            }
+            .verification-records {
+                min-height: 300px;
+                margin-top: 12px;
+            }
+            .record-toolbar > div:first-child,
+            .record-toolbar > div:last-child {
+                flex-basis: 100%;
+            }
+            .record-toolbar > div:last-child {
+                justify-content: flex-start;
+            }
+        }
+        @media (max-width: 480px) {
+            .detail-primary-grid {
+                grid-template-columns: 1fr;
+            }
+            .current-detail-card {
+                min-height: 440px;
+            }
+            .current-detail-card .detail-meta {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(3, minmax(44px, auto));
+            }
+            .viewer-dialog {
+                width: 94vw !important;
+            }
+            .viewer-meta-bar {
+                grid-template-columns: 1fr;
+            }
+            .loop-editor-stage {
+                height: min(48vh, 420px);
+            }
+        }
+        @media (max-width: 1180px) {
+            .validation-context-bar { grid-template-columns: auto repeat(3, minmax(0, 1fr)); }
+            .validation-context-bar .context-item:nth-child(5),
+            .validation-context-bar .context-item:nth-child(6) { display: none; }
+        }
+    </style>
+</head>
+<body class="min-h-screen overflow-auto flex flex-col">
+<!-- 顶部标题栏 -->
+<header class="h-12 bg-[#2D2D2D] text-white flex items-center justify-between px-6 flex-none">
+<div class="flex items-center space-x-3">
+<a class="qt-btn px-3 py-1 bg-gray-600 border-gray-500 text-white hover:bg-gray-500" href="plate-capture-system_main.html" onclick="return leaveRealtimeValidation()">
+<iconify-icon class="mr-1" icon="mdi:chevron-left"></iconify-icon>
+                返回验证准备
+            </a>
+<span class="text-lg font-bold tracking-wider ml-4">实时验证</span>
+</div>
+<div class="flex items-center gap-4 text-xs text-gray-400"><span>验证状态：<b class="font-normal text-blue-300" id="headerValidationStatus">未开始</b></span><span>系统时间：<span id="systemTime">--</span></span></div>
+</header>
+<!-- 主体内容 -->
+<main class="flex-1 min-h-0 p-4 verification-main">
+<!-- 抓拍验证工作区：左侧任务与配置，右侧详情与全景图 -->
+<section class="verification-workspace flex-none">
+<div class="qt-card left-capture-panel flex flex-col overflow-hidden">
+<div class="qt-title flex items-center gap-1.5"><iconify-icon class="text-base text-blue-600" icon="mdi:radar"></iconify-icon>抓拍任务与配置</div>
+<div class="left-capture-content">
+<div class="control-subsection">
+<div class="subsection-heading"><iconify-icon class="text-blue-600" icon="mdi:play-circle-outline"></iconify-icon>抓拍任务</div>
+<div class="task-status-row">
+<span class="mr-2 inline-block h-2.5 w-2.5 flex-none rounded-full bg-gray-400" id="captureStatusDot"></span>
+<span class="truncate" id="captureStatusText">任务未启动</span>
+</div>
+<div class="mt-3">
+<div class="mb-1.5 flex items-center justify-between text-xs text-gray-500"><span>抓拍数量 / 上限</span><span id="captureProgressText">0 / 20</span></div>
+<div class="progress-track"><div class="progress-fill" id="captureProgressFill"></div></div>
+</div>
+<div class="task-actions">
+<button class="qt-btn px-3" id="setLimitBtn" onclick="setLimit()"><iconify-icon class="mr-1" icon="mdi:counter"></iconify-icon>设置上限</button>
+<button class="qt-btn qt-btn-primary w-full py-1.5" id="startCaptureBtn" onclick="toggleCapture()"><iconify-icon class="mr-1" icon="mdi:play-circle-outline"></iconify-icon>开始抓拍</button>
+</div>
+</div>
+<div class="control-divider"></div>
+<div class="control-subsection">
+<div class="subsection-heading"><iconify-icon class="text-blue-600" icon="mdi:tune-variant"></iconify-icon>抓拍配置</div>
+<div class="config-label">触发方式与线圈</div>
+<div class="grid grid-cols-2 gap-2">
+<label class="segment-option relative"><input checked="" name="triggerMethod" onchange="saveCaptureConfig();syncTriggerControls()" type="radio" value="virtual"/><span class="segment-surface rounded"><iconify-icon icon="mdi:vector-polygon"></iconify-icon>虚拟线圈</span></label>
+<label class="segment-option relative"><input name="triggerMethod" onchange="saveCaptureConfig();syncTriggerControls()" type="radio" value="ground"/><span class="segment-surface rounded"><iconify-icon icon="mdi:electric-switch"></iconify-icon>地感线圈</span></label>
+</div>
+<div class="loop-status mt-2" id="loopModeStatus">当前使用虚拟线圈触发</div>
+<div class="mt-2 grid grid-cols-2 gap-2">
+<button class="qt-btn w-full px-2" id="drawLoopBtn" onclick="drawLoop()"><iconify-icon class="mr-1" icon="mdi:vector-square-edit"></iconify-icon>绘制线圈</button>
+<label class="qt-btn w-full px-2" id="toggleLoopLabel"><input class="mr-1.5 h-3.5 w-3.5" id="toggleLoop" onchange="toggleVirtualLoop()" type="checkbox"/>显示线圈</label>
+</div>
+</div>
+</div>
+</div>
+<div class="right-preview-stack">
+<div class="qt-card current-detail-card flex flex-col overflow-hidden">
+<div class="qt-title detail-card-title flex items-center justify-between gap-3">
+<span class="flex min-w-0 items-center gap-1.5"><iconify-icon class="text-base text-blue-600" icon="mdi:card-account-details-outline"></iconify-icon>当前抓拍详情</span>
+<span class="detail-status-badge" id="detailStatus">--</span>
+</div>
+<div class="detail-card-content">
+<div class="detail-primary-grid">
+<div class="plate-preview-frame flex items-center justify-center relative overflow-hidden" id="smallImgContainer">
+<img alt="License Plate Thumbnail" class="plate-crop hidden" id="smallImg" src="assets/vehicles/beijing-taxi-jingb-k0074.jpg"/>
+<span class="text-slate-400 text-xs">暂无车牌小图</span>
+</div>
+<div class="plate-result-copy">
+<span class="plate-result-caption">回传车牌号</span>
+<div class="plate-number hidden" id="plateLabel">
+                        粤B 88888
+</div>
+</div>
+</div>
+<div class="detail-meta mt-2" id="detailMeta">
+<div class="detail-meta-row"><span>抓拍时间</span><b class="detail-value" id="detailTime">--</b></div>
+<div class="detail-meta-row"><span>所在车道</span><b class="detail-value" id="detailLane">--</b></div>
+<div class="detail-meta-row"><span>触发方式</span><b class="detail-value" id="detailTrigger">--</b></div>
+</div>
+<div class="detail-action-row">
+<div class="review-panel">
+<span class="flex items-center gap-1.5 whitespace-nowrap"><span class="review-tag" id="detailReviewStatus">待确认</span></span>
+<div class="review-options">
+<button class="qt-btn review-btn px-2 py-1 text-xs" data-review="正确" onclick="setReviewStatus('正确')">正确</button>
+<button class="qt-btn review-btn px-2 py-1 text-xs" data-review="错误" onclick="setReviewStatus('错误')">错误</button>
+</div>
+</div>
+<div class="detail-navigation">
+<button class="qt-btn px-2 py-1 text-xs" id="prevRecordBtn" onclick="navigateRecord(-1)"><iconify-icon class="mr-1" icon="mdi:chevron-left"></iconify-icon>上一张</button>
+<button class="qt-btn px-2 py-1 text-xs" id="nextRecordBtn" onclick="navigateRecord(1)">下一张<iconify-icon class="ml-1" icon="mdi:chevron-right"></iconify-icon></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 结束上方抓拍验证工作区，避免验证记录进入左右网格 -->
+</section>
+<!-- 保留主图交互状态节点，供既有线圈与状态逻辑使用；不在页面中展示全景模块。 -->
+<div class="hidden" id="mainImageSupport" aria-hidden="true">
+<div class="image-pan-stage" id="largeImgStage">
+<img alt="Full Vehicle Image" class="image-pan-target" draggable="false" id="largeImg" src="assets/vehicles/beijing-taxi-full.jpg"/>
+<div class="result-placeholder hidden" id="largeImagePlaceholder">
+<iconify-icon icon="mdi:image-off-outline"></iconify-icon>
+<span id="largeImagePlaceholderText">暂无车辆全景图</span>
+</div>
+<svg id="loopSvg" preserveAspectRatio="none" viewBox="0 0 1000 1000">
+<polygon fill="rgba(239,68,68,.12)" id="loopPolygon" points="350,400 650,400 650,600 350,600" stroke="#ef4444" stroke-width="8"></polygon>
+<g id="loopHandles"></g>
+</svg>
+<div class="hidden" id="drawHint">请依次点击 4 个顶点</div>
+</div>
+<button id="zoomOutBtn"></button>
+<span id="mainZoomReadout">100%</span>
+<button id="zoomInBtn"></button>
+</div>
+<!-- 底部照片管理区 -->
+<section class="verification-records flex-1 min-h-0 qt-card flex flex-col overflow-hidden">
+<div class="qt-title record-toolbar">
+<div class="flex min-w-0 items-center gap-3"><span class="flex items-center gap-1.5"><iconify-icon class="text-base text-blue-600" icon="mdi:image-multiple-outline"></iconify-icon>验证记录</span><span class="hidden truncate text-xs font-normal text-blue-700" id="selectedRecordSummary"></span><span class="truncate text-xs font-normal text-slate-500" id="validationConclusion">暂无可汇总结论</span></div>
+<div class="flex items-center gap-1.5"><span class="summary-chip">总计 <b id="recordCount">3</b></span><span class="summary-chip text-green-700">正确 <b id="summaryCorrect">0</b></span><span class="summary-chip text-red-700">识别错误 <b id="summaryAbnormal">0</b></span><span class="summary-chip text-amber-700">待确认 <b id="summaryPending">1</b></span><span class="summary-chip text-orange-700">系统异常 <b id="summarySystemError">0</b></span><button class="qt-btn border-red-300 bg-red-50 px-3 py-1 text-xs text-red-600" onclick="clearData()"><iconify-icon class="mr-1" icon="mdi:delete-sweep-outline"></iconify-icon>清空</button></div>
+</div>
+<div class="flex-1 overflow-auto">
+<table class="qt-table">
+<thead>
+<tr>
+<th class="w-16">序号</th>
+<th>车牌号</th>
+<th>车牌小图</th>
+<th>全景大图</th>
+<th>抓拍时间</th>
+<th>所在车道</th>
+<th>回传状态</th>
+<th>判定结果</th>
+<th class="w-32">操作</th>
+</tr>
+</thead>
+<tbody id="recordTableBody">
+</tbody>
+</table>
+</div>
+</section>
+</main>
+<!-- 弹窗模拟 -->
+<div class="fixed inset-0 bg-black bg-opacity-30 hidden z-50 flex items-center justify-center" id="modalOverlay">
+<div class="qt-card shadow-xl w-96 max-w-[90vw] overflow-hidden" id="modalPanel">
+<div class="qt-title flex justify-between items-center">
+<span class="flex items-center gap-2 text-sm font-bold"><iconify-icon class="text-base text-blue-600" icon="mdi:information-outline" id="modalTitleIcon"></iconify-icon><span id="modalTitle">提示</span></span>
+<button class="text-gray-500 hover:text-red-500" onclick="closeModal()">
+<iconify-icon icon="mdi:close"></iconify-icon>
+</button>
+</div>
+<div class="p-6 text-sm" id="modalBody">
+                内容加载中...
+            </div>
+<div class="p-3 bg-gray-50 flex justify-end space-x-2">
+<button class="qt-btn px-5 hidden" id="modalCancel" onclick="closeModal()">取消</button>
+<button class="qt-btn qt-btn-primary px-6" id="modalConfirm" onclick="confirmModal()">确定</button>
+</div>
+</div>
+</div>
+<script>
+        const demoSamples = [
+            {
+                plate: '京B·K0074',
+                plateImg: 'assets/vehicles/beijing-taxi-jingb-k0074.jpg',
+                vehicleImg: 'assets/vehicles/beijing-taxi-full.jpg',
+                cropScale: 1,
+                cropOrigin: '50% 50%',
+                cropPosition: '50% 50%',
+                sourceLabel: '北京现代出租车 · Love Krittaya · Public Domain',
+                sourcePage: 'https://commons.wikimedia.org/wiki/File:PR_China_license_plate_Beijing_%E4%BA%ACB%E2%80%A2K0074_Taxi.jpg'
+            },
+            {
+                plate: '粤Z·G969港',
+                plateImg: 'assets/vehicles/guangdong-hk-yuez-g969.jpg',
+                vehicleImg: 'assets/vehicles/guangdong-hk-yuez-g969.jpg',
+                cropScale: 1,
+                cropOrigin: '50% 50%',
+                cropPosition: '50% 100%',
+                sourceLabel: '粤港跨境车辆 · liuchoi · CC BY-SA 3.0',
+                sourcePage: 'https://commons.wikimedia.org/wiki/File:China_cross-border_Guangdong-Hong_Kong_license_plate-%E7%B2%A4Z%E2%80%A2G969%E6%B8%AF.jpg'
+            },
+            {
+                plate: '粤Z·8503澳',
+                plateImg: 'assets/vehicles/guangdong-macau-yuez-8503.jpg',
+                vehicleImg: 'assets/vehicles/guangdong-macau-yuez-8503.jpg',
+                cropScale: 1,
+                cropOrigin: '50% 50%',
+                cropPosition: '50% 43%',
+                sourceLabel: '粤澳跨境车辆 · ZhengZhou · CC BY-SA 4.0',
+                sourcePage: 'https://commons.wikimedia.org/wiki/File:China_cross-border_Guangdong-Macau_license_plate_%E7%B2%A4Z_8503%E6%BE%B3.jpg'
+            }
+        ];
+
+        const demoScenarios = [
+            { status: '结果已回传', imageState: 'available', hasResult: true },
+            { status: '已收到触发', imageState: 'missing', hasResult: false },
+            { status: '算法处理失败', imageState: 'available', hasResult: false },
+            { status: '图片未回传', imageState: 'missing', hasResult: true },
+            { status: '结果已回传', imageState: 'available', hasResult: true }
+        ];
+
+        const initialRecords = [
+            { id: 1, time: '2026-07-30 11:45:22', lane: '车道1', status: '结果已回传', reviewStatus: '正确', trigger: 'virtual', ...demoSamples[0] },
+            { id: 2, time: '2026-07-30 11:50:05', lane: '车道1', status: '结果已回传', reviewStatus: '错误', trigger: 'virtual', ...demoSamples[1] },
+            { id: 3, time: '2026-07-30 12:01:15', lane: '车道2', status: '结果已回传', reviewStatus: '待确认', trigger: 'ground', ...demoSamples[2] }
+        ];
+
+        const validationContext = loadValidationContext();
+        let records = loadRecords();
+        let selectedRecordId = records.length ? records[records.length - 1].id : null;
+        let captureTimer = null;
+        let captureStartTimer = null;
+        let recordReturnTimer = null;
+        let currentCaptureCount = 0;
+        let nextRecordId = Math.max(0, ...records.map(record => Number(record.id) || 0)) + 1;
+        let pendingConfirmAction = null;
+        const mainImageView = { scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 };
+        let modalImageView = null;
+        let isDrawingLoop = false;
+        let draggingPointIndex = null;
+        let loopEditorMode = null;
+        let loopEditorOriginalPoints = null;
+        let loopEditorSaved = false;
+        let captureLimit = normalizeLimit(localStorage.getItem('plateDemoLimit') ?? validationContext.deviceConfig?.capture?.limit);
+        const defaultDeviceLoop = [
+            { x: 350, y: 400 }, { x: 350, y: 600 },
+            { x: 650, y: 600 }, { x: 650, y: 400 }
+        ];
+        const configuredLoop = validationContext.deviceConfig?.capture?.virtualLoop;
+        let loopPoints = loadJson('plateDemoLoop', []);
+        if (!Array.isArray(loopPoints) || loopPoints.length !== 4) {
+            loopPoints = Array.isArray(configuredLoop) && configuredLoop.length === 4
+                ? configuredLoop.map(point => ({ ...point }))
+                : defaultDeviceLoop.map(point => ({ ...point }));
+        }
+
+        function loadValidationContext() {
+            const saved = loadJson('plateDemoValidationContext', null);
+            return saved && typeof saved === 'object' ? { ...saved, isFallback: false } : {
+                pcIp: '192.168.1.155', edgeIp: '192.168.1.108', lane: localStorage.getItem('plateDemoLane') || '车道1',
+                algorithmState: 'existing', algorithmFile: '', videoVerified: true, enteredAt: formatTime(), isFallback: true
+            };
+        }
+
+        function loadRecords() {
+            const current = loadJson('plateDemoRecordsV6', null);
+            const legacy = loadJson('plateDemoRecordsV5', null);
+            const source = Array.isArray(current) ? current : Array.isArray(legacy) ? legacy : initialRecords;
+            return source.map(record => {
+                const normalized = { ...record, lane: normalizeLane(record.lane), status: normalizeResultStatus(record.status), reviewStatus: normalizeReviewStatus(record.reviewStatus) };
+                // 兼容已保存的旧演示记录：已取消“图片展示失败”这一页面状态。
+                if (normalized.status === '图片展示失败') {
+                    normalized.status = '结果已回传';
+                    normalized.plateImageState = normalized.plateImg ? 'available' : 'missing';
+                    normalized.fullImageState = normalized.vehicleImg ? 'available' : 'missing';
+                }
+                // 兼容此前演示数据：算法处理失败不等于照片未回传。
+                if (normalized.status === '算法处理失败' && !normalized.plateImg && !normalized.vehicleImg) {
+                    const sample = demoSamples[(Math.max(1, Number(normalized.id) || 1) - 1) % demoSamples.length];
+                    normalized.plateImg = sample.plateImg;
+                    normalized.vehicleImg = sample.vehicleImg;
+                    normalized.plateImageState = 'available';
+                    normalized.fullImageState = 'available';
+                }
+                return normalized;
+            });
+        }
+
+        function normalizeLane(value) {
+            const text = String(value || '').trim();
+            const match = text.match(/^(?:车道|Lane_0?)([1-8])$/i);
+            return match ? `车道${match[1]}` : (text || '车道1');
+        }
+
+        function normalizeReviewStatus(value) {
+            return ['正确', '错误'].includes(value) ? value : '待确认';
+        }
+
+        function normalizeResultStatus(value) {
+            const text = String(value || '').trim();
+            return ['识别成功', '未识别', ''].includes(text) ? '结果已回传' : text;
+        }
+
+        function isReviewableRecord(record) {
+            return Boolean(record) && (isImageAvailable(record, 'plate') || isImageAvailable(record, 'full'));
+        }
+
+        function isSystemExceptionRecord(record) {
+            return Boolean(record?.systemException);
+        }
+
+        function getImageState(record, type) {
+            const state = record?.[`${type}ImageState`];
+            if (['available', 'missing'].includes(state)) return state;
+            return record?.[type === 'plate' ? 'plateImg' : 'vehicleImg'] ? 'available' : 'missing';
+        }
+
+        function isImageAvailable(record, type) {
+            return Boolean(record?.[type === 'plate' ? 'plateImg' : 'vehicleImg']) && getImageState(record, type) === 'available';
+        }
+
+        function getImagePlaceholderText(record, type) {
+            const isFull = type === 'full';
+            if (getImageState(record, type) === 'missing' && record?.status === '图片未回传') return isFull ? '车辆全景图未回传' : '车牌小图未回传';
+            return isFull ? '暂无车辆全景图' : '暂无车牌小图';
+        }
+
+        function getStatusMeta(status) {
+            const meta = {
+                '结果已回传': { icon: 'mdi:check-circle', className: 'text-green-600' },
+                '已收到触发': { icon: 'mdi:radar', className: 'text-amber-600' },
+                '算法处理失败': { icon: 'mdi:alert-circle', className: 'text-red-600' },
+                '图片未回传': { icon: 'mdi:image-off-outline', className: 'text-amber-700' }
+            };
+            return meta[status] || { icon: 'mdi:information-outline', className: 'text-slate-500' };
+        }
+
+        function renderStatusTag(status) {
+            const normalized = normalizeResultStatus(status);
+            const meta = getStatusMeta(normalized);
+            return `<span class="${meta.className} inline-flex items-center whitespace-nowrap"><iconify-icon class="mr-1" icon="${meta.icon}"></iconify-icon>${escapeHtml(normalized)}</span>`;
+        }
+
+        function renderTableImage(record, type) {
+            const isFull = type === 'full';
+            const alt = `${escapeHtml(record.plate || '本条记录')} ${isFull ? '全景图' : '车牌小图'}`;
+            if (!isImageAvailable(record, type)) {
+                return `<div class="table-image-placeholder h-7 ${isFull ? 'w-12' : 'w-20'} overflow-hidden rounded-sm">无图片</div>`;
+            }
+            if (isFull) return `<img alt="${alt}" class="h-6 w-12 object-cover" src="${record.vehicleImg}">`;
+            return `<div class="h-7 w-20 overflow-hidden rounded-sm border border-gray-300 bg-black"><img alt="${alt}" class="plate-crop" src="${record.plateImg}" style="object-position:${record.cropPosition || '50% 50%'};transform:scale(${record.cropScale || 1});transform-origin:${record.cropOrigin || '50% 50%'}"/></div>`;
+        }
+
+        function normalizeLimit(value) {
+            if (value === null || value === '') return 20;
+            return Math.max(1, Math.min(100, Math.floor(Number(value) || 1)));
+        }
+
+        function loadJson(key, fallback) {
+            try {
+                const saved = localStorage.getItem(key);
+                return saved ? JSON.parse(saved) : fallback;
+            } catch (error) {
+                return fallback;
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('plateDemoRecordsV6', JSON.stringify(records));
+            localStorage.setItem('plateDemoLoop', JSON.stringify(loopPoints));
+        }
+
+        function saveCaptureConfig() {
+            const trigger = document.querySelector('input[name="triggerMethod"]:checked').value;
+            localStorage.setItem('plateDemoCaptureConfig', JSON.stringify({ trigger }));
+        }
+
+        function isCaptureActive() {
+            return Boolean(captureTimer || captureStartTimer || recordReturnTimer);
+        }
+
+        function syncTriggerControls() {
+            const trigger = document.querySelector('input[name="triggerMethod"]:checked').value;
+            const virtual = trigger === 'virtual';
+            const locked = isCaptureActive();
+            const drawButton = document.getElementById('drawLoopBtn');
+            const toggle = document.getElementById('toggleLoop');
+            const label = document.getElementById('toggleLoopLabel');
+            document.querySelectorAll('input[name="triggerMethod"]').forEach(input => { input.disabled = locked; });
+            document.getElementById('setLimitBtn').disabled = locked;
+            drawButton.disabled = !virtual || locked;
+            toggle.disabled = !virtual || locked;
+            label.classList.toggle('opacity-50', !virtual || locked);
+            label.classList.toggle('cursor-not-allowed', !virtual || locked);
+            if (!virtual) {
+                toggle.checked = false;
+                document.getElementById('loopSvg').classList.add('hidden');
+                document.getElementById('loopModeStatus').innerHTML = '<span class="text-amber-700">地感线圈触发，无需配置虚拟线圈</span>';
+            } else {
+                const configured = loopPoints.length === 4;
+                document.getElementById('loopModeStatus').innerHTML = configured
+                    ? `<span class="text-green-700">${locked ? '抓拍中，已锁定相机虚拟线圈配置' : '已读取相机虚拟线圈配置，可沿用或重新绘制'}</span>`
+                    : '当前使用虚拟线圈触发，请先绘制线圈';
+            }
+            renderSelectedRecord();
+        }
+
+        function restoreCaptureConfig() {
+            const saved = loadJson('plateDemoCaptureConfig', { trigger: validationContext.deviceConfig?.capture?.trigger || 'virtual' });
+            const trigger = document.querySelector(`input[name="triggerMethod"][value="${saved.trigger}"]`);
+            if (trigger) trigger.checked = true;
+        }
+
+        function updateCaptureProgress() {
+            const current = Math.min(currentCaptureCount, captureLimit);
+            const percent = Math.min(100, (currentCaptureCount / captureLimit) * 100);
+            document.getElementById('captureProgressText').innerText = `${current} / ${captureLimit}`;
+            const fill = document.getElementById('captureProgressFill');
+            fill.style.width = `${percent}%`;
+            fill.style.background = currentCaptureCount >= captureLimit ? '#ef4444' : 'linear-gradient(90deg, #16a34a, #22c55e)';
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>'"]/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            })[char]);
+        }
+
+        function formatTime(date = new Date()) {
+            const pad = value => String(value).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        }
+
+        function updateClock() {
+            document.getElementById('systemTime').innerText = formatTime();
+        }
+
+        function renderValidationContext() {
+            if (validationContext.isFallback) {
+                document.getElementById('headerValidationStatus').innerText = '未读取验证准备信息';
+            } else {
+                setValidationStatus('未开始');
+            }
+        }
+
+        function setValidationStatus(status) {
+            document.getElementById('headerValidationStatus').innerText = status;
+        }
+
+        function showModal(title, body, options = {}) {
+            const panel = document.getElementById('modalPanel');
+            const modalBody = document.getElementById('modalBody');
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalTitleIcon').setAttribute('icon', options.icon || (options.viewer ? 'mdi:image-search-outline' : 'mdi:information-outline'));
+            modalBody.innerHTML = body;
+            modalBody.className = options.viewer ? 'bg-slate-100 p-3 text-sm' : 'p-6 text-sm';
+            document.getElementById('modalCancel').classList.toggle('hidden', !options.confirm);
+            document.getElementById('modalConfirm').innerText = options.confirmText || (options.viewer ? '关闭' : '确定');
+            document.getElementById('modalConfirm').classList.toggle('bg-red-600', options.danger === true);
+            panel.classList.toggle('viewer-dialog', options.viewer === true);
+            panel.style.width = options.viewer ? '' : options.wide ? '72vw' : '24rem';
+            pendingConfirmAction = options.onConfirm || null;
+            document.getElementById('modalOverlay').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            pendingConfirmAction = null;
+            modalImageView = null;
+            finishLoopEditor();
+            document.getElementById('modalOverlay').classList.add('hidden');
+        }
+
+        function confirmModal() {
+            const action = pendingConfirmAction;
+            pendingConfirmAction = null;
+            modalImageView = null;
+            finishLoopEditor();
+            document.getElementById('modalOverlay').classList.add('hidden');
+            if (action) action();
+        }
+
+        function finishLoopEditor() {
+            if (!loopEditorMode) return;
+            if (loopEditorMode === 'draw' && !loopEditorSaved && Array.isArray(loopEditorOriginalPoints)) {
+                loopPoints = loopEditorOriginalPoints.map(point => ({ ...point }));
+                renderLoop();
+                syncTriggerControls();
+            }
+            document.getElementById('toggleLoop').checked = false;
+            loopEditorMode = null;
+            loopEditorOriginalPoints = null;
+            loopEditorSaved = false;
+        }
+
+        function renderRecords() {
+            const tbody = document.getElementById('recordTableBody');
+            document.getElementById('recordCount').innerText = records.length;
+            updateValidationSummary();
+            updateCaptureProgress();
+            if (!records.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-400 py-8 italic">暂无照片记录，请点击“开始抓拍”生成演示数据</td></tr>';
+                selectedRecordId = null;
+                renderSelectedRecord();
+                return;
+            }
+
+            tbody.innerHTML = records.slice().reverse().map((record, index) => `
+                <tr class="record-row ${record.id === selectedRecordId ? 'record-selected' : ''}" data-record-id="${record.id}">
+                    <td>${String(records.length - index).padStart(3, '0')}</td>
+                    <td class="font-bold">${record.plate ? escapeHtml(record.plate) : '<span class="font-normal text-slate-400">—</span>'}</td>
+                    <td>${renderTableImage(record, 'plate')}</td>
+                    <td>
+                        <div class="record-full-image-cell">
+                            ${renderTableImage(record, 'full')}
+                            <button class="qt-btn record-view-full-btn px-2 py-0.5 text-xs" onclick="event.stopPropagation();viewFullRecord(${record.id})"><iconify-icon class="mr-1" icon="mdi:eye"></iconify-icon>查看原图</button>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(record.time)}</td>
+                    <td>${escapeHtml(normalizeLane(record.lane))}</td>
+                    <td>${renderStatusTag(record.status)}</td>
+                    <td>${renderReviewTag(record.reviewStatus, record)}</td>
+                    <td>
+                        <div class="flex gap-1">
+                            <button class="qt-btn px-2 py-0.5 text-xs" onclick="event.stopPropagation();viewRecord(${record.id})">查看</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('.record-row').forEach(row => {
+                row.addEventListener('click', () => selectRecord(Number(row.dataset.recordId)));
+            });
+        }
+
+        function renderReviewTag(status, record = null) {
+            if (record && isSystemExceptionRecord(record)) return '<span class="review-tag error">系统异常</span>';
+            if (record && !isReviewableRecord(record)) return '<span class="review-tag">等待照片回传</span>';
+            const normalized = normalizeReviewStatus(status);
+            const className = normalized === '正确' ? 'correct' : normalized === '错误' ? 'error' : '';
+            return `<span class="review-tag ${className}">${escapeHtml(normalized)}</span>`;
+        }
+
+        function updateValidationSummary() {
+            const systemErrorRecords = records.filter(isSystemExceptionRecord);
+            const nonSystemErrorRecords = records.filter(record => !isSystemExceptionRecord(record));
+            const correct = nonSystemErrorRecords.filter(record => normalizeReviewStatus(record.reviewStatus) === '正确').length;
+            const abnormal = nonSystemErrorRecords.filter(record => normalizeReviewStatus(record.reviewStatus) === '错误').length;
+            const pending = nonSystemErrorRecords.length - correct - abnormal;
+            const systemError = systemErrorRecords.length;
+            document.getElementById('summaryCorrect').innerText = correct;
+            document.getElementById('summaryAbnormal').innerText = abnormal;
+            document.getElementById('summaryPending').innerText = pending;
+            document.getElementById('summarySystemError').innerText = systemError;
+            const conclusion = document.getElementById('validationConclusion');
+            if (!records.length) conclusion.innerText = '尚未产生验证记录';
+            else if (pending > 0) conclusion.innerText = `本轮确认未完成，仍有 ${pending} 条结果待确认`;
+            else if (systemError > 0) conclusion.innerText = `本轮结果已完成确认，发现 ${systemError} 条系统异常`;
+            else if (abnormal > 0) conclusion.innerText = `本轮结果已完成确认，发现 ${abnormal} 条识别错误`;
+            else conclusion.innerText = '本轮结果已完成确认，未发现人工确认错误';
+            if (records.length && pending === 0 && !captureTimer && !captureStartTimer) setValidationStatus('已完成确认');
+        }
+
+        function selectRecord(id) {
+            selectedRecordId = id;
+            resetMainImageView();
+            renderRecords();
+            renderSelectedRecord();
+        }
+
+        function renderSelectedRecord() {
+            const record = records.find(item => item.id === selectedRecordId);
+            const smallImg = document.getElementById('smallImg');
+            const plateLabel = document.getElementById('plateLabel');
+            const placeholder = document.getElementById('smallImgContainer').querySelector('span');
+            const largeImg = document.getElementById('largeImg');
+            const largePlaceholder = document.getElementById('largeImagePlaceholder');
+            const largePlaceholderText = document.getElementById('largeImagePlaceholderText');
+            const hasFullImage = Boolean(record && isImageAvailable(record, 'full'));
+            document.getElementById('zoomOutBtn').disabled = !hasFullImage || mainImageView.scale <= 1;
+            document.getElementById('zoomInBtn').disabled = !hasFullImage || mainImageView.scale >= 4;
+            if (!record) {
+                Object.assign(mainImageView, { scale: 1, x: 0, y: 0, dragging: false });
+                applyMainImageView();
+                smallImg.classList.add('hidden');
+                largeImg.classList.add('hidden');
+                largePlaceholder.classList.add('hidden');
+                document.getElementById('loopSvg').classList.add('hidden');
+                plateLabel.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                placeholder.innerText = '暂无车牌小图';
+                document.getElementById('selectedRecordSummary').innerText = '';
+                document.getElementById('detailTime').innerText = '--';
+                document.getElementById('detailLane').innerText = '--';
+                document.getElementById('detailStatus').innerText = '--';
+                document.getElementById('detailTrigger').innerText = '--';
+                document.getElementById('detailReviewStatus').innerText = '--';
+                document.getElementById('detailReviewStatus').className = 'review-tag';
+                document.getElementById('prevRecordBtn').disabled = true;
+                document.getElementById('nextRecordBtn').disabled = true;
+                document.querySelectorAll('.review-btn').forEach(button => { button.disabled = true; button.classList.remove('is-active'); });
+                return;
+            }
+            const hasPlateImage = isImageAvailable(record, 'plate');
+            if (hasPlateImage) {
+                smallImg.src = record.plateImg;
+                smallImg.style.transform = `scale(${record.cropScale || 1})`;
+                smallImg.style.transformOrigin = record.cropOrigin || '50% 50%';
+                smallImg.style.objectPosition = record.cropPosition || '50% 50%';
+                smallImg.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                smallImg.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                placeholder.innerText = getImagePlaceholderText(record, 'plate');
+            }
+            if (hasFullImage) {
+                largeImg.src = record.vehicleImg;
+                largeImg.classList.remove('hidden');
+                largePlaceholder.classList.add('hidden');
+            } else {
+                largeImg.classList.add('hidden');
+                largePlaceholderText.innerText = getImagePlaceholderText(record, 'full');
+                largePlaceholder.classList.remove('hidden');
+            }
+            document.getElementById('loopSvg').classList.toggle('hidden', !hasFullImage);
+            if (record.plate) {
+                plateLabel.innerText = record.plate;
+                plateLabel.classList.remove('hidden');
+            } else {
+                plateLabel.classList.add('hidden');
+            }
+                document.getElementById('selectedRecordSummary').innerText = '';
+            document.getElementById('detailTime').innerText = record.time;
+            document.getElementById('detailLane').innerText = normalizeLane(record.lane);
+            document.getElementById('detailStatus').innerHTML = renderStatusTag(record.status);
+            document.getElementById('detailTrigger').innerText = record.trigger === 'ground' ? '地感线圈' : '虚拟线圈';
+            const canReview = isReviewableRecord(record);
+            const reviewStatus = isSystemExceptionRecord(record) ? '系统异常' : (canReview ? normalizeReviewStatus(record.reviewStatus) : '等待照片回传');
+            const reviewTag = document.getElementById('detailReviewStatus');
+            reviewTag.innerText = reviewStatus;
+            reviewTag.className = `review-tag ${reviewStatus === '正确' ? 'correct' : reviewStatus === '错误' || reviewStatus === '系统异常' ? 'error' : ''}`;
+            document.querySelectorAll('.review-btn').forEach(button => {
+                button.disabled = !canReview;
+                button.classList.toggle('is-active', canReview && button.dataset.review === reviewStatus);
+            });
+            const recordIndex = records.findIndex(item => item.id === record.id);
+            document.getElementById('prevRecordBtn').disabled = recordIndex <= 0;
+            document.getElementById('nextRecordBtn').disabled = recordIndex < 0 || recordIndex >= records.length - 1;
+        }
+
+        function navigateRecord(direction) {
+            if (!records.length || !selectedRecordId) return;
+            const currentIndex = records.findIndex(item => item.id === selectedRecordId);
+            const nextIndex = currentIndex + direction;
+            if (currentIndex < 0 || nextIndex < 0 || nextIndex >= records.length) return;
+            selectedRecordId = records[nextIndex].id;
+            resetMainImageView();
+            renderRecords();
+            renderSelectedRecord();
+        }
+
+        function setReviewStatus(status) {
+            const record = records.find(item => item.id === selectedRecordId);
+            if (!record) return showModal('暂无记录', '请先选择一条抓拍记录。');
+            if (!isReviewableRecord(record)) return showModal('暂不可判定', '当前记录暂无可查看照片；若该条记录的确认等待期内仍未回传照片，系统将归为系统异常，抓拍会继续监听后续车辆。');
+            record.reviewStatus = normalizeReviewStatus(status);
+            saveState();
+            renderRecords();
+            renderSelectedRecord();
+        }
+
+        function toggleCapture() {
+            if (isCaptureActive()) {
+                stopCapture();
+            } else {
+                startCapture();
+            }
+        }
+
+        function startCapture() {
+            const trigger = document.querySelector('input[name="triggerMethod"]:checked').value;
+            if (trigger === 'virtual' && loopPoints.length !== 4) {
+                showModal('抓拍任务未启动', '相机未返回有效的虚拟线圈配置。请先在设备配置中完成四点线圈设置，并等待设备确认生效。');
+                return;
+            }
+            const button = document.getElementById('startCaptureBtn');
+            currentCaptureCount = 0;
+            updateCaptureProgress();
+            button.innerHTML = '<iconify-icon class="mr-1" icon="mdi:stop-circle-outline"></iconify-icon>停止抓拍';
+            button.classList.remove('qt-btn-primary');
+            button.classList.add('text-red-600');
+            document.getElementById('captureStatusDot').className = 'mr-2 inline-block h-2.5 w-2.5 rounded-full bg-green-500 capture-pulse';
+            document.getElementById('captureStatusText').innerText = '正在监听车辆事件，等待触发…';
+            setValidationStatus('验证中');
+            showModal('成功提示', '开始抓拍！');
+            captureStartTimer = setTimeout(() => {
+                captureStartTimer = null;
+                simulateCapture();
+            }, 900);
+            syncTriggerControls();
+        }
+
+        function stopCapture() {
+            clearTimeout(captureStartTimer);
+            clearTimeout(captureTimer);
+            clearTimeout(recordReturnTimer);
+            captureStartTimer = null;
+            captureTimer = null;
+            recordReturnTimer = null;
+            finalizePhotoMissingRecords();
+            const button = document.getElementById('startCaptureBtn');
+            button.innerHTML = '<iconify-icon class="mr-1" icon="mdi:play-circle-outline"></iconify-icon>开始抓拍';
+            button.classList.add('qt-btn-primary');
+            button.classList.remove('text-red-600');
+            document.getElementById('captureStatusDot').className = 'mr-2 inline-block h-2.5 w-2.5 rounded-full bg-gray-400';
+            document.getElementById('captureStatusText').innerText = '抓拍任务已停止';
+            setValidationStatus('已停止');
+            syncTriggerControls();
+            renderRecords();
+        }
+
+        function finalizePhotoMissingRecords() {
+            let changed = false;
+            records.forEach(record => {
+                // 这里判断的是设备是否回传过照片；当前记录的确认等待期结束仍无照片时，才归为系统异常。
+                const photoMissing = !record.plateImg && !record.vehicleImg;
+                if (photoMissing && !record.systemException) {
+                    record.systemException = true;
+                    changed = true;
+                }
+                if (!photoMissing && record.systemException) {
+                    record.systemException = false;
+                    changed = true;
+                }
+            });
+            if (changed) saveState();
+        }
+
+        function leaveRealtimeValidation() {
+            if (isCaptureActive()) stopCapture();
+            window.location.href = 'plate-capture-system_main.html';
+            return false;
+        }
+
+        function simulateCapture() {
+            if (currentCaptureCount >= captureLimit) {
+                stopCapture();
+                showModal('抓拍任务已停止', '已达到抓拍上限！');
+                return;
+            }
+            const sample = demoSamples[(nextRecordId - 1) % demoSamples.length];
+            const scenarioIndex = Math.max(0, nextRecordId - initialRecords.length - 1) % demoScenarios.length;
+            const scenario = demoScenarios[scenarioIndex];
+            const waitingForPhoto = scenario.imageState === 'missing';
+            const lane = normalizeLane(validationContext.lane || localStorage.getItem('plateDemoLane'));
+            const trigger = document.querySelector('input[name="triggerMethod"]:checked').value;
+            const record = {
+                id: nextRecordId++, plate: scenario.hasResult ? sample.plate : '',
+                // 是否有算法结果与是否回传照片是两件事：算法失败时仍应能查看现场照片。
+                plateImg: scenario.imageState === 'available' ? sample.plateImg : '',
+                vehicleImg: scenario.imageState === 'available' ? sample.vehicleImg : '',
+                plateImageState: scenario.imageState, fullImageState: scenario.imageState,
+                cropScale: sample.cropScale, cropOrigin: sample.cropOrigin,
+                cropPosition: sample.cropPosition,
+                sourceLabel: sample.sourceLabel, sourcePage: sample.sourcePage,
+                time: formatTime(), lane, trigger, status: waitingForPhoto ? '已收到触发' : scenario.status, reviewStatus: '待确认'
+            };
+            records.push(record);
+            currentCaptureCount += 1;
+            selectedRecordId = record.id;
+            resetMainImageView();
+            document.getElementById('captureStatusText').innerText = waitingForPhoto
+                ? '当前记录正在等待照片回传，暂停下一次抓拍…'
+                : (record.plate ? `刚刚生成 ${record.plate} · ${record.status}` : `刚刚生成记录 · ${record.status}`);
+            saveState();
+            updateCaptureProgress();
+            renderRecords();
+            renderSelectedRecord();
+            if (waitingForPhoto) {
+                // 串行设备：等待当前记录的照片回传期间不生成下一条；等待结束后继续监听下一辆车。
+                recordReturnTimer = setTimeout(() => {
+                    recordReturnTimer = null;
+                    record.status = '图片未回传';
+                    record.systemException = true;
+                    saveState();
+                    renderRecords();
+                    renderSelectedRecord();
+                    document.getElementById('captureStatusText').innerText = '当前记录未回传照片，已归为系统异常，继续监听车辆事件…';
+                    if (currentCaptureCount >= captureLimit) {
+                        stopCapture();
+                        showModal('抓拍任务已停止', `已达到抓拍上限 <b>${captureLimit}</b> 条。`);
+                    } else {
+                        captureTimer = setTimeout(() => {
+                            captureTimer = null;
+                            simulateCapture();
+                        }, 1200);
+                    }
+                }, 1800);
+            } else if (currentCaptureCount >= captureLimit) {
+                stopCapture();
+                showModal('抓拍任务已停止', `已达到抓拍上限 <b>${captureLimit}</b> 条。`);
+            } else {
+                // 本条已完成照片和结果回传后，设备才能处理下一次抓拍。
+                captureTimer = setTimeout(() => {
+                    captureTimer = null;
+                    simulateCapture();
+                }, 4500);
+            }
+        }
+
+        function setLimit() {
+            if (isCaptureActive()) return showModal('配置已锁定', '抓拍过程中不能修改抓拍上限，请先停止抓拍。');
+            showModal('设置抓拍上限', `
+                <div class="space-y-3">
+                    <label class="block qt-label">请输入抓拍上限数量（1–100）：</label>
+                    <input id="limitInput" type="number" min="1" max="100" value="${captureLimit}" class="qt-input w-full">
+                    <p class="text-xs text-gray-500">默认为 20。设置后上方进度条最大值将同步更新。</p>
+                </div>
+            `, { confirm: true, confirmText: '保存', onConfirm: saveLimit });
+        }
+
+        function saveLimit() {
+            const input = document.getElementById('limitInput');
+            const raw = Number(input.value);
+            if (!Number.isInteger(raw) || raw < 1 || raw > 100) {
+                showModal('设置失败', '抓拍上限必须是 1–100 之间的整数。');
+                return;
+            }
+            captureLimit = raw;
+            localStorage.setItem('plateDemoLimit', String(captureLimit));
+            updateCaptureProgress();
+            showModal('保存成功', `抓拍上限已设置为 <b>${captureLimit}</b> 条，进度条已同步更新。`);
+        }
+
+        function drawLoop() {
+            if (isCaptureActive()) {
+                showModal('配置已锁定', '抓拍过程中不能修改虚拟线圈，请先停止抓拍。');
+                return;
+            }
+            if (document.querySelector('input[name="triggerMethod"]:checked').value !== 'virtual') {
+                showModal('无法绘制线圈', '当前使用地感线圈触发，无需配置虚拟线圈。');
+                return;
+            }
+            document.getElementById('toggleLoop').checked = true;
+            openLoopEditor('draw');
+        }
+
+        function getLoopPreviewImage() {
+            const record = records.find(item => item.id === selectedRecordId);
+            return record && isImageAvailable(record, 'full') ? record.vehicleImg : demoSamples[0].vehicleImg;
+        }
+
+        function openLoopEditor(mode) {
+            const editable = mode === 'draw';
+            const imageSrc = getLoopPreviewImage();
+            loopEditorMode = mode;
+            loopEditorSaved = false;
+            if (editable) {
+                loopEditorOriginalPoints = loopPoints.map(point => ({ ...point }));
+                loopPoints = [];
+                renderLoop();
+            }
+            showModal(editable ? '绘制虚拟线圈' : '查看虚拟线圈', `
+                <div class="space-y-3">
+                    <div class="rounded border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800" id="loopEditorHint">
+                        ${editable ? '请在车辆全景图上依次点击 4 个顶点；完成后可拖动红色顶点微调。' : '当前为只读查看。关闭弹窗后返回实时验证页面。'}
+                    </div>
+                    <div class="loop-editor-stage" id="loopEditorStage">
+                        <img src="${imageSrc}" alt="虚拟线圈绘制参考画面">
+                        <svg id="loopEditorSvg" preserveAspectRatio="none" viewBox="0 0 1000 1000" aria-label="虚拟线圈编辑区">
+                            <polygon fill="rgba(239,68,68,.16)" id="loopEditorPolygon" stroke="#ef4444" stroke-width="8"></polygon>
+                            <g id="loopEditorHandles"></g>
+                        </svg>
+                    </div>
+                    ${editable ? '<button class="qt-btn qt-btn-primary w-full px-3 py-2" type="button" onclick="saveLoopEditor()"><iconify-icon class="mr-1" icon="mdi:content-save-outline"></iconify-icon>保存线圈</button>' : ''}
+                    <p class="text-xs text-slate-500">${editable ? '完成四点绘制或拖动顶点后，请点击“保存线圈”写入当前演示配置；直接关闭不会保存本次修改。' : '线圈坐标来自当前相机配置或本次演示中已保存的线圈。'}</p>
+                </div>
+            `, { viewer: true, icon: editable ? 'mdi:vector-square-edit' : 'mdi:vector-polygon', confirmText: '关闭' });
+
+            const stage = document.getElementById('loopEditorStage');
+            const svg = document.getElementById('loopEditorSvg');
+            const polygon = document.getElementById('loopEditorPolygon');
+            const handles = document.getElementById('loopEditorHandles');
+            const hint = document.getElementById('loopEditorHint');
+            let draggingIndex = null;
+
+            const pointFromEvent = event => {
+                const rect = stage.getBoundingClientRect();
+                return {
+                    x: Math.max(0, Math.min(1000, ((event.clientX - rect.left) / rect.width) * 1000)),
+                    y: Math.max(0, Math.min(1000, ((event.clientY - rect.top) / rect.height) * 1000))
+                };
+            };
+
+            const renderEditorLoop = () => {
+                polygon.setAttribute('points', loopPoints.map(point => `${point.x},${point.y}`).join(' '));
+                polygon.style.display = loopPoints.length >= 3 ? 'block' : 'none';
+                handles.innerHTML = loopPoints.map((point, index) => `
+                    <circle class="loop-editor-handle" data-index="${index}" cx="${point.x}" cy="${point.y}" r="18" fill="#ffffff" stroke="#ef4444" stroke-width="8"></circle>
+                `).join('');
+            };
+
+            svg.addEventListener('pointerdown', event => {
+                if (!editable) return;
+                const handle = event.target.closest('.loop-editor-handle');
+                if (handle) {
+                    draggingIndex = Number(handle.dataset.index);
+                    svg.setPointerCapture(event.pointerId);
+                    event.preventDefault();
+                    return;
+                }
+                if (loopPoints.length >= 4) return;
+                loopPoints.push(pointFromEvent(event));
+                loopEditorSaved = false;
+                renderEditorLoop();
+                if (loopPoints.length === 4) {
+                    hint.innerText = '四个顶点已绘制。你可以拖动红色顶点微调，然后点击“保存线圈”。';
+                } else {
+                    hint.innerText = `已选择 ${loopPoints.length}/4 个顶点，请继续点击。`;
+                }
+            });
+            svg.addEventListener('pointermove', event => {
+                if (!editable || draggingIndex === null) return;
+                loopPoints[draggingIndex] = pointFromEvent(event);
+                loopEditorSaved = false;
+                renderEditorLoop();
+            });
+            const finishDrag = () => {
+                if (draggingIndex === null) return;
+                draggingIndex = null;
+                hint.innerText = '线圈已调整，请点击“保存线圈”确认本次修改。';
+            };
+            svg.addEventListener('pointerup', finishDrag);
+            svg.addEventListener('pointercancel', finishDrag);
+            renderEditorLoop();
+        }
+
+        function saveLoopEditor() {
+            if (loopEditorMode !== 'draw') return;
+            const hint = document.getElementById('loopEditorHint');
+            if (loopPoints.length !== 4) {
+                hint.innerText = `请先完成四点绘制（当前 ${loopPoints.length}/4）。`;
+                hint.className = 'rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700';
+                return;
+            }
+            saveState();
+            renderLoop();
+            syncTriggerControls();
+            loopEditorOriginalPoints = loopPoints.map(point => ({ ...point }));
+            loopEditorSaved = true;
+            hint.innerText = '虚拟线圈已保存到当前演示配置。你可以继续修改，并再次点击保存。';
+            hint.className = 'rounded border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700';
+        }
+
+        function stagePoint(event) {
+            const rect = document.getElementById('largeImgStage').getBoundingClientRect();
+            return {
+                x: Math.max(0, Math.min(1000, ((event.clientX - rect.left) / rect.width) * 1000)),
+                y: Math.max(0, Math.min(1000, ((event.clientY - rect.top) / rect.height) * 1000))
+            };
+        }
+
+        function handleStagePointerDown(event) {
+            if (isCaptureActive()) return;
+            if (event.target.classList.contains('loop-handle')) return;
+            if (isDrawingLoop) {
+                loopPoints.push(stagePoint(event));
+                if (loopPoints.length === 4) {
+                    isDrawingLoop = false;
+                    document.getElementById('drawHint').classList.add('hidden');
+                    saveState();
+                    syncTriggerControls();
+                    showModal('线圈绘制完成', '虚拟线圈已保存。可拖动红色顶点继续微调。');
+                } else {
+                    document.getElementById('drawHint').innerText = `已选择 ${loopPoints.length}/4 个顶点`;
+                }
+                renderLoop();
+                return;
+            }
+            if (mainImageView.scale <= 1) return;
+            mainImageView.dragging = true;
+            mainImageView.startX = event.clientX;
+            mainImageView.startY = event.clientY;
+            mainImageView.originX = mainImageView.x;
+            mainImageView.originY = mainImageView.y;
+            document.getElementById('largeImgStage').setPointerCapture(event.pointerId);
+            applyMainImageView();
+        }
+
+        function renderLoop() {
+            const polygon = document.getElementById('loopPolygon');
+            const handles = document.getElementById('loopHandles');
+            polygon.setAttribute('points', loopPoints.map(point => `${point.x},${point.y}`).join(' '));
+            polygon.style.display = loopPoints.length >= 3 ? 'block' : 'none';
+            handles.innerHTML = loopPoints.map((point, index) => `
+                <circle class="loop-handle" data-index="${index}" cx="${point.x}" cy="${point.y}" r="20" fill="#ffffff" stroke="#ef4444" stroke-width="8"></circle>
+            `).join('');
+            handles.querySelectorAll('.loop-handle').forEach(handle => {
+                handle.addEventListener('pointerdown', event => {
+                    if (isCaptureActive()) return;
+                    draggingPointIndex = Number(handle.dataset.index);
+                    handle.setPointerCapture(event.pointerId);
+                    event.stopPropagation();
+                });
+            });
+        }
+
+        function toggleVirtualLoop() {
+            if (isCaptureActive()) return;
+            if (document.querySelector('input[name="triggerMethod"]:checked').value !== 'virtual') return;
+            const toggle = document.getElementById('toggleLoop');
+            if (toggle.checked && loopPoints.length !== 4) {
+                toggle.checked = false;
+                document.getElementById('loopSvg').classList.add('hidden');
+                showModal('警告提示', '不存在虚拟线圈！<br><span class="mt-2 block text-xs text-gray-500">请先点击“绘制线圈”完成四个顶点配置。</span>');
+                return;
+            }
+            if (toggle.checked) openLoopEditor('view');
+        }
+
+        function clearData() {
+            showModal('清空当前验证任务', `即将清空当前验证任务的 <b>${records.length}</b> 条演示抓拍记录及其汇总结果，此操作不可撤销。`, {
+                confirm: true, confirmText: '确认清空', danger: true,
+                onConfirm: () => {
+                    stopCapture();
+                    currentCaptureCount = 0;
+                    records = [];
+                    selectedRecordId = null;
+                    saveState();
+                    updateCaptureProgress();
+                    renderRecords();
+                    renderSelectedRecord();
+                    showModal('清空完成', '当前验证任务的演示抓拍记录及汇总结果已清空。');
+                }
+            });
+        }
+
+        function viewFull() {
+            const record = records.find(item => item.id === selectedRecordId);
+            if (!record) return showModal('暂无记录', '请先选择一条抓拍记录。');
+            if (!isImageAvailable(record, 'full')) {
+                return showModal(`${escapeHtml(record.plate || '当前记录')} · 无法查看全景图`, `
+                    <div class="result-placeholder min-h-40 rounded border border-slate-300 bg-slate-50">
+                        <iconify-icon icon="mdi:image-off-outline"></iconify-icon>
+                        <span>${escapeHtml(getImagePlaceholderText(record, 'full'))}</span>
+                        <span class="text-xs text-slate-500">当前记录状态：${escapeHtml(record.status)}</span>
+                    </div>
+                `, { icon: 'mdi:image-off-outline' });
+            }
+            showModal(`${escapeHtml(record.plate)} · 全景大图`, `
+                <div class="space-y-3">
+                    <div class="viewer-meta-bar">
+                        <span><b>抓拍时间</b>${escapeHtml(record.time)}</span>
+                        <span><b>所在车道</b>${escapeHtml(record.lane)}</span>
+                    </div>
+                    <div class="image-pan-stage flex h-[58vh] items-center justify-center rounded border border-slate-500 bg-slate-800" id="modalImageStage">
+                        <img class="image-pan-target h-full w-full object-contain" draggable="false" id="modalFullImage" src="${record.vehicleImg}" alt="${escapeHtml(record.plate)} 车辆全景图">
+                    </div>
+                    <div class="flex items-center justify-center gap-2 rounded border border-slate-200 bg-white p-2">
+                        <button class="qt-btn px-3" id="modalZoomOutBtn" onclick="adjustModalZoom(-0.5)"><iconify-icon class="mr-1" icon="mdi:magnify-minus"></iconify-icon>缩小</button>
+                        <span class="zoom-readout" id="modalZoomReadout">100%</span>
+                        <button class="qt-btn px-3" id="modalZoomInBtn" onclick="adjustModalZoom(0.5)"><iconify-icon class="mr-1" icon="mdi:magnify-plus"></iconify-icon>放大</button>
+                        <button class="qt-btn px-3" onclick="resetModalImageView()"><iconify-icon class="mr-1" icon="mdi:restore"></iconify-icon>复位</button>
+                        <span class="ml-3 inline-flex items-center gap-1.5 text-xs leading-none text-slate-500"><iconify-icon class="flex-none text-base" icon="mdi:cursor-move"></iconify-icon><span>放大后按住图片拖动</span></span>
+                    </div>
+                </div>
+            `, { viewer: true, icon: 'mdi:image-search-outline' });
+            initModalImageViewer();
+        }
+
+        function viewFullRecord(id) {
+            selectRecord(id);
+            viewFull();
+        }
+
+        function viewRecord(id) {
+            selectRecord(id);
+        }
+
+        function clamp(value, minimum, maximum) {
+            return Math.max(minimum, Math.min(maximum, value));
+        }
+
+        function constrainPan(view, stage) {
+            if (!stage || view.scale <= 1) {
+                view.x = 0;
+                view.y = 0;
+                return;
+            }
+            const maxX = stage.clientWidth * (view.scale - 1) / 2;
+            const maxY = stage.clientHeight * (view.scale - 1) / 2;
+            view.x = clamp(view.x, -maxX, maxX);
+            view.y = clamp(view.y, -maxY, maxY);
+        }
+
+        function applyMainImageView() {
+            const image = document.getElementById('largeImg');
+            const stage = document.getElementById('largeImgStage');
+            constrainPan(mainImageView, stage);
+            image.style.transform = `translate(${mainImageView.x}px, ${mainImageView.y}px) scale(${mainImageView.scale})`;
+            image.classList.toggle('is-zoomed', mainImageView.scale > 1);
+            image.classList.toggle('is-dragging', mainImageView.dragging);
+            stage.style.cursor = mainImageView.scale > 1 ? (mainImageView.dragging ? 'grabbing' : 'grab') : '';
+            document.getElementById('mainZoomReadout').innerText = `${Math.round(mainImageView.scale * 100)}%`;
+            const record = records.find(item => item.id === selectedRecordId);
+            const hasFullImage = Boolean(record && isImageAvailable(record, 'full'));
+            document.getElementById('zoomOutBtn').disabled = !hasFullImage || mainImageView.scale <= 1;
+            document.getElementById('zoomInBtn').disabled = !hasFullImage || mainImageView.scale >= 4;
+        }
+
+        function resetMainImageView() {
+            Object.assign(mainImageView, { scale: 1, x: 0, y: 0, dragging: false });
+            applyMainImageView();
+        }
+
+        function adjustMainZoom(delta) {
+            const record = records.find(item => item.id === selectedRecordId);
+            if (!record) return showModal('暂无记录', '请先选择一条抓拍记录。');
+            if (!isImageAvailable(record, 'full')) return showModal('暂无车辆全景图', getImagePlaceholderText(record, 'full'));
+            mainImageView.scale = clamp(mainImageView.scale + delta, 1, 4);
+            if (mainImageView.scale === 1) {
+                mainImageView.x = 0;
+                mainImageView.y = 0;
+            }
+            applyMainImageView();
+        }
+
+        function applyModalImageView() {
+            if (!modalImageView) return;
+            const image = document.getElementById('modalFullImage');
+            const stage = document.getElementById('modalImageStage');
+            if (!image || !stage) return;
+            constrainPan(modalImageView, stage);
+            image.style.transform = `translate(${modalImageView.x}px, ${modalImageView.y}px) scale(${modalImageView.scale})`;
+            image.classList.toggle('is-zoomed', modalImageView.scale > 1);
+            image.classList.toggle('is-dragging', modalImageView.dragging);
+            document.getElementById('modalZoomReadout').innerText = `${Math.round(modalImageView.scale * 100)}%`;
+            document.getElementById('modalZoomOutBtn').disabled = modalImageView.scale <= 1;
+            document.getElementById('modalZoomInBtn').disabled = modalImageView.scale >= 5;
+        }
+
+        function adjustModalZoom(delta) {
+            if (!modalImageView) return;
+            modalImageView.scale = clamp(modalImageView.scale + delta, 1, 5);
+            if (modalImageView.scale === 1) {
+                modalImageView.x = 0;
+                modalImageView.y = 0;
+            }
+            applyModalImageView();
+        }
+
+        function resetModalImageView() {
+            if (!modalImageView) return;
+            Object.assign(modalImageView, { scale: 1, x: 0, y: 0, dragging: false });
+            applyModalImageView();
+        }
+
+        function initModalImageViewer() {
+            const stage = document.getElementById('modalImageStage');
+            if (!stage) return;
+            modalImageView = { scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 };
+            stage.addEventListener('pointerdown', event => {
+                if (!modalImageView || modalImageView.scale <= 1) return;
+                modalImageView.dragging = true;
+                modalImageView.startX = event.clientX;
+                modalImageView.startY = event.clientY;
+                modalImageView.originX = modalImageView.x;
+                modalImageView.originY = modalImageView.y;
+                stage.setPointerCapture(event.pointerId);
+                applyModalImageView();
+            });
+            stage.addEventListener('pointermove', event => {
+                if (!modalImageView?.dragging) return;
+                modalImageView.x = modalImageView.originX + event.clientX - modalImageView.startX;
+                modalImageView.y = modalImageView.originY + event.clientY - modalImageView.startY;
+                applyModalImageView();
+            });
+            const finishDrag = () => {
+                if (!modalImageView) return;
+                modalImageView.dragging = false;
+                applyModalImageView();
+            };
+            stage.addEventListener('pointerup', finishDrag);
+            stage.addEventListener('pointercancel', finishDrag);
+            stage.addEventListener('wheel', event => {
+                event.preventDefault();
+                adjustModalZoom(event.deltaY < 0 ? 0.5 : -0.5);
+            }, { passive: false });
+            applyModalImageView();
+        }
+
+        document.getElementById('largeImgStage').addEventListener('pointerdown', handleStagePointerDown);
+        document.getElementById('largeImgStage').addEventListener('pointermove', event => {
+            if (!mainImageView.dragging) return;
+            mainImageView.x = mainImageView.originX + event.clientX - mainImageView.startX;
+            mainImageView.y = mainImageView.originY + event.clientY - mainImageView.startY;
+            applyMainImageView();
+        });
+        const finishMainImageDrag = () => {
+            if (!mainImageView.dragging) return;
+            mainImageView.dragging = false;
+            applyMainImageView();
+        };
+        document.getElementById('largeImgStage').addEventListener('pointerup', finishMainImageDrag);
+        document.getElementById('largeImgStage').addEventListener('pointercancel', finishMainImageDrag);
+        document.getElementById('largeImgStage').addEventListener('wheel', event => {
+            if (!selectedRecordId || isDrawingLoop) return;
+            event.preventDefault();
+            adjustMainZoom(event.deltaY < 0 ? 0.5 : -0.5);
+        }, { passive: false });
+        document.getElementById('loopSvg').addEventListener('pointermove', event => {
+            if (isCaptureActive()) return;
+            if (draggingPointIndex === null) return;
+            loopPoints[draggingPointIndex] = stagePoint(event);
+            renderLoop();
+        });
+        document.getElementById('loopSvg').addEventListener('pointerup', () => {
+            if (draggingPointIndex !== null) saveState();
+            draggingPointIndex = null;
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeModal();
+        });
+        window.addEventListener('pagehide', () => {
+            if (isCaptureActive()) stopCapture();
+        });
+
+        restoreCaptureConfig();
+        renderValidationContext();
+        syncTriggerControls();
+        updateClock();
+        setInterval(updateClock, 1000);
+        renderLoop();
+        document.getElementById('loopSvg').classList.add('hidden');
+        renderRecords();
+        renderSelectedRecord();
+    </script>
+</body>
+</html>
